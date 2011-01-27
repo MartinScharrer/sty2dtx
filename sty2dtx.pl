@@ -5,7 +5,7 @@
 #
 # $Id$
 ################################################################################
-use strict; 
+use strict;
 use warnings;
 
 my $macrostart = <<'EOT';
@@ -29,44 +29,50 @@ my $macrocodestop = <<'EOT';
 EOT
 
 my $closematter = "";
-my $inmacro = 0;
+my $inmacro     = 0;
 
 while (<>) {
-   if (/^(\\expandafter|\\\@firstoftwo{)?\\[exg]?(def|newcommand\*?{?)(\\[a-zA-Z@]+)(.*)/) {
-       my $pre  = $1 || "";
-       my $cmd  = $2;
-       my $name = $3;
-       my $rest = $4;
-       if ($cmd =~ /^newcommand.*{/) {
-          $rest =~ s/^}//;
-       }
-       my $prerest = $pre.$rest;
-       if ($prerest =~ tr/{/{/ == $prerest =~ tr/}/}/) {
-          print $closematter; $closematter = "";
-          printf $macrostart, $name;
-          print $_,$macrostop;
-       }
-       else {
-          print $closematter; $closematter = "";
-          printf $macrostart, $name;
-          print $_;
-       }
-       $inmacro=1;
-   }
-   elsif (/^}$/) {
-       print $_,$macrostop;
-       $inmacro=0;
-   }
-   elsif (/^$/) {
-   }
-   else {
-       if ($closematter||$inmacro) {
-         print;
-       } else {
-         print $macrocodestart, $_;
-         $closematter = $macrocodestop;
-       }
-   }
+    if (
+/^(\\expandafter|\\\@firstoftwo{)?\\[exg]?(def|newcommand\*?{?)(\\[a-zA-Z@]+)(.*)/
+      )
+    {
+        my $pre  = $1 || "";
+        my $cmd  = $2;
+        my $name = $3;
+        my $rest = $4;
+        if ( $cmd =~ /^newcommand.*{/ ) {
+            $rest =~ s/^}//;
+        }
+        my $prerest = $pre . $rest;
+        if ( $prerest =~ tr/{/{/ == $prerest =~ tr/}/}/ ) {
+            print $closematter;
+            $closematter = "";
+            printf $macrostart, $name;
+            print $_, $macrostop;
+        }
+        else {
+            print $closematter;
+            $closematter = "";
+            printf $macrostart, $name;
+            print $_;
+        }
+        $inmacro = 1;
+    }
+    elsif (/^}$/) {
+        print $_, $macrostop;
+        $inmacro = 0;
+    }
+    elsif (/^$/) {
+    }
+    else {
+        if ( $closematter || $inmacro ) {
+            print;
+        }
+        else {
+            print $macrocodestart, $_;
+            $closematter = $macrocodestop;
+        }
+    }
 }
 
 __END__
