@@ -1,10 +1,9 @@
 #!/usr/bin/env perl
+use strict;
+use warnings;
 ################################################################################
-my $VERSION = substr('$Date$', 7, 10);
-my $TITLE = << "EOT";
-  sty2dtx -- Converts a LaTeX .sty file to a documented .dtx file
-  Version: $VERSION
-EOT
+# $Id$
+################################################################################
 my $COPYRIGHT = << 'EOT';
   Copyright (c) 2010-2011 Martin Scharrer <martin@scharrer-online.de>
 
@@ -20,7 +19,9 @@ my $COPYRIGHT = << 'EOT';
 
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 EOT
+################################################################################
 my $DESCRIPTION = << 'EOT';
   Converts a .sty filebase (LaTeX package) to .dtx format (documented LaTeX source),
   by surrounding macro definitions with 'macro' and 'macrocode' environments.
@@ -30,13 +31,13 @@ my $DESCRIPTION = << 'EOT';
   environments. Empty lines are removed.
   The script is not thought to be fool proof and 100% accurate but rather
   as a good start to convert undocumented style filebase to .dtx files.
- 
+
   Usage:
      perl sty2dtx.pl infile [infile ...] outfile
   or
      perl sty2dtx.pl < filebase.sty > filebase.dtx
- 
- 
+
+
   The following macro definitions are detected when they are at the start of a
   line (can be prefixed by \global, \long, \protected and/or \outer):
     \def   \edef   \gdef   \xdef
@@ -47,15 +48,58 @@ my $DESCRIPTION = << 'EOT';
     \providecommand{\name} \providecommand*{\name}
     \providecommand\name   \providecommand*\name
     \@namedef{\name}       \@namedef\name
- 
-  The macro definition must either end at the same line or with a '}' on its own
-  on a line.
+
+  The following environment definitions are detected when they are at the start
+  of a line:
+    \newenvironment{name}  \renewenvironemnt{name}  \provideenvironment{name}
+
+  The macro and environment definition must either end at the same line or with
+  a '}' on its own on a line.
+
 EOT
-#
-# $Id$
 ################################################################################
-use strict;
-use warnings;
+my $VERSION = substr('$Date$', 7, 10);
+$VERSION =~ tr/-/\//;
+my $TITLE = << "EOT";
+  sty2dtx -- Converts a LaTeX .sty file to a documented .dtx file
+  Version: $VERSION
+EOT
+
+sub usage {
+    print << "EOT";
+sty2dtx.pl [<options>] [--<VAR>=<VALUE> ...] [--] [<infile> ...] [<outfile>]
+Version: $VERSION
+EOT
+    print << 'EOT';
+Files:
+  * can be '-' for STDIN or STDOUT, which is the default if no files are given
+  * multiple input files are merged to one output file
+
+Variables:
+  can be defined using --<VAR>=<VALUE> or --<VAR> <VALUE> and will be used for
+  substitutions in the template file.
+  Common variables:
+      author, email, maintainer, year (for copyright),
+      version, date, description (of package/class),
+      type (either 'package' default or 'class'),
+      filebase (automatically set from output or input file name),
+
+Options:
+  -h            : Print this help text
+  -H            : Print extended help
+  -V            : Print version and copyright
+  -t <template> : Use this file as template instead of the default one
+  -e <file>     : Export default template to file and exit
+
+Examples:
+    sty2dtx.pl < infile > outfile
+    sty2dtx.pl --author Me --email me@there.com mypkg.sty mypkg.dtx
+    sty2dtx.pl --type class mycls.sty mycls.dtx
+
+EOT
+    exit (0);
+}
+
 
 # Used as format string of printf so that the '%' must be doubled:
 my $macrostart = <<'EOT';
@@ -153,45 +197,10 @@ sub close_env {
     }
 }
 
-sub usage {
-    print << "EOT";
-sty2dtx.pl [<options>] [--<VAR>=<VALUE> ...] [--] [<infile> ...] [<outfile>]
-Version: $VERSION
-EOT
-    print << 'EOT';
-Files:
-  * can be '-' for STDIN or STDOUT, which is the default if no files are given
-  * multiple input files are merged to one output file
-
-Variables:
-  can be defined using --<VAR>=<VALUE> or --<VAR> <VALUE> and will be used for
-  substitutions in the template file.
-  Common variables:
-      author, email, maintainer, year (for copyright),
-      version, date, description (of package),
-      filebase (automatically set from output or input file name)
-
-Options:
-  -h            : Print this help text
-  -H            : Print extended help
-  -V            : Print version and copyright
-  -t <template> : Use this file as template instead of the default one
-  -e <file>     : Export default template to file and exit
-  -p            : Generate DTX file for a package (default)
-  -c            : Generate DTX file for a class
-
-Examples:
-    sty2dtx.pl < infile > outfile
-    sty2dtx.pl --author Me --email me@there.com mypkg.sty mypkg.dtx
-    sty2dtx.pl -c mycls.sty mycls.dtx
-
-EOT
-    exit (0);
-}
-
 my @files;
-my %vars;
+my %vars = ( type => 'package', class => 'ltxdoc' );
 
+# Handle options
 sub option {
     my $opt = shift;
     if ($opt eq 'h') {
@@ -224,27 +233,36 @@ sub option {
     }
 }
 
+################################################################################
+# Parse arguments
 while (@ARGV) {
     my $arg = shift;
+    # '--' Marks rest of arguments as files
     if ($arg eq '--' ) {
         push @files, @ARGV;
         last;
     }
+    # Options and variables
     elsif ($arg =~ /^(-+)(.+)$/ ) {
         my $dashes = $1;
         my $name   = $2;
+        # Single dash => option
         if (length($dashes) == 1) {
             foreach my $opt (split //, $name) {
                 option($opt);
             }
         }
+        # Douple Dash => Variable
+        # Form "--var=value"
         elsif ($name =~ /^([^=]+)=(.*)$/) {
                 $vars{lc($1)} = $2;
         }
+        # Form "--var value"
         else {
             $vars{lc($name)} = shift;
         }
     }
+    # Files
     else {
         push @files, $arg;
     }
@@ -266,6 +284,8 @@ elsif (@files == 1) {
 }
 
 
+################################################################################
+# Read input files
 @ARGV = @files;
 while (<>) {
     # Test for macro definition command
@@ -356,15 +376,23 @@ while (<>) {
 
 close_env();
 
+################################################################################
+# Write output file
 $vars{IMPLEMENTATION} = $IMPL;
 $vars{USAGE}          = $USAGE;
+$vars{type}           = "\L$vars{type}";
+$vars{Type}           = "\L\u$vars{type}";
 
 while (<DATA>) {
+    # Substitute template variables
     s/<\+([^+]+)\+>\n?/exists $vars{$1} ? $vars{$1} : "<+$1+>"/eg;
     print;
 }
 
-#
+exit(0)
+
+################################################################################
+# Write output file
 # The template for the DTX filebase.
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # The '<+var+>' still was choosen because it is used by the latex suite for Vim.
@@ -397,15 +425,15 @@ __DATA__
 %<*driver>
 \ProvidesFile{<+filebase+>.dtx}
 %</driver>
-%<package>\NeedsTeXFormat{LaTeX2e}[1999/12/01]
-%<package>\ProvidesPackage{<+filebase+>}
-%<*package>
-    [<+vdate+> <+version+> <+description+>]
-%</package>
+%<<+type+>>\NeedsTeXFormat{LaTeX2e}[1999/12/01]
+%<<+type+>>\Provides<+Type+>{<+filebase+>}
+%<*<+type+>>
+    [<+date+> <+version+> <+description+>]
+%</<+type+>>
 %
 %<*driver>
 \documentclass{ltxdoc}
-\usepackage{<+filebase+>}[<+vdate+>]
+\usepackage{<+filebase+>}[<+date+>]
 \EnableCrossrefs
 \CodelineIndex
 \RecordChanges
@@ -436,7 +464,7 @@ __DATA__
 %   Right brace   \}     Tilde         \~}
 %
 %
-% \changes{<+version+>}{<+vdate+>}{Converted to DTX filebase}
+% \changes{<+version+>}{<+date+>}{Converted to DTX filebase}
 %
 % \DoNotIndex{\newcommand,\newenvironment}
 %
@@ -461,7 +489,15 @@ __DATA__
 %
 % \section{Implementation}
 %
+% \iffalse
+%<*<+type+>>
+% \fi
+%
 <+IMPLEMENTATION+>
+%
+% \iffalse
+%</<+type+>>
+% \fi
 %
 % \Finale
 \endinput
