@@ -23,19 +23,19 @@ my $COPYRIGHT = << 'EOT';
 EOT
 ################################################################################
 my $DESCRIPTION = << 'EOT';
-  Converts a .sty filebase (LaTeX package) to .dtx format (documented LaTeX source),
+  Converts a .sty file (LaTeX package) to .dtx format (documented LaTeX source),
   by surrounding macro definitions with 'macro' and 'macrocode' environments.
   The macro name is automatically inserted as an argument to the 'macro'
   environemnt.
   Code lines outside macro definitions are wrapped only in 'macrocode'
   environments. Empty lines are removed.
   The script is not thought to be fool proof and 100% accurate but rather
-  as a good start to convert undocumented style filebase to .dtx files.
+  as a good start to convert undocumented style file to .dtx files.
 
   Usage:
      perl sty2dtx.pl infile [infile ...] outfile
   or
-     perl sty2dtx.pl < filebase.sty > filebase.dtx
+     perl sty2dtx.pl < file.sty > file.dtx
 
 
   The following macro definitions are detected when they are at the start of a
@@ -88,13 +88,35 @@ Options:
   -h            : Print this help text
   -H            : Print extended help
   -V            : Print version and copyright
-  -t <template> : Use this file as template instead of the default one
-  -e <file>     : Export default template to file and exit
+  -v            : Be verbose
   -o <output>   : Use given file as output
+  -B            : Use basename of single input file for output file
+  -I            : Also create .ins (install) file
+  -i <ins file> : Create .ins file with given name
+  -t <template> : Use this file as template instead of the default one
+  -T <template> : Use this file as template for the .ins file
+  -e <file>     : Export default .dtx template to file and exit
+  -E <file>     : Export default .ins template to file and exit
 
 Examples:
-    sty2dtx.pl < infile > outfile
+  Produce 'file.dtx' from 'file.sty':
+    sty2dtx.pl < file.sty > file.dtx
+   or
+    sty2dtx.pl file.sty file.dtx
+   or
+    sty2dtx.pl -B file.sty
+
+  Produce 'file.dtx' and 'file.ins' from 'file.sty':
+    sty2dtx.pl -I file.sty file.dtx
+   or
+    sty2dtx.pl file.sty -i file.sty file.dtx
+   or
+    sty2dtx.pl -IB file.sty
+
+  Set custom variable values:
     sty2dtx.pl --author Me --email me@there.com mypkg.sty mypkg.dtx
+
+  Produce DTX file for a class:
     sty2dtx.pl --type class mycls.sty mycls.dtx
 
 EOT
@@ -147,8 +169,8 @@ my $macrocodestop = <<'EOT';
 %
 EOT
 
-my $USAGE;  # Store macro names for usage section
-my $IMPL;   # Store implementation section
+my $USAGE = '';  # Store macro names for usage section
+my $IMPL  = '';   # Store implementation section
 
 my $mode = 0;
 # 0 = outside of macro or macrocode environments
@@ -202,6 +224,14 @@ my ($mday,$mon,$year) = (localtime(time))[3..5];
 $year += 1900;
 
 my @files;
+my $outfile = '';
+my $verbose = 0;
+my $install = 0;
+my $usebase = 0;
+my $installfile;
+my $templfile;
+my $installtempl;
+
 # Holds the variables for the templates, is initiated with default values:
 my %vars = (
     type  => 'package',
@@ -222,24 +252,65 @@ sub option {
         print $DESCRIPTION;
         exit (0);
     }
+    elsif ($opt eq 'B') {
+        $usebase = 1;
+    }
     elsif ($opt eq 't') {
         close (DATA);
-        my $templ = shift @ARGV;
-        open (DATA, '<', $templ) or die "Couldn't open template file '$templ'\n";
+        $templfile = shift @ARGV;
+        open (DATA, '<', $templfile) or die "Couldn't open template file '$templfile'\n";
     }
     elsif ($opt eq 'e') {
         my $templ = shift @ARGV;
-        open (TEMPL, '>', $templ) or die "Couldn't open new template file '$templ'\n";
-        print TEMPL <DATA>;
-        close (TEMPL);
-        print STDERR "Exported default template to file '$templ'\n";
+        if ($templfile ne '-') {
+            open (STDOUT, '>', $templ) or die "Couldn't open new template file '$templ'\n";
+        }
+        while (<DATA>) {
+            last if /^__INS__$/;
+            print;
+        }
+        print STDERR "Exported default template for .dtx files to file '$templ'\n";
         exit (0);
+    }
+    elsif ($opt eq 'E') {
+        my $templ = shift @ARGV;
+        if ($templ ne '-') {
+            open (STDOUT, '>', $templ) or die "Couldn't open new template file '$templ'\n";
+        }
+        while (<DATA>) {
+            last if /^__INS__$/;
+        }
+        while (<DATA>) {
+            print;
+        }
+        print STDERR "Exported default template for .ins files to file '$templ'\n";
+        exit (0);
+    }
+    elsif ($opt eq 'v') {
+        $verbose ++;
+    }
+    elsif ($opt eq 'I') {
+        $install = 1;
+    }
+    elsif ($opt eq 'i') {
+        $installfile = shift @ARGV;
+        $install = 1;
+    }
+    elsif ($opt eq 'T') {
+        $installtempl = shift @ARGV;
     }
     elsif ($opt eq 'V') {
         print $TITLE;
         print "\n";
         print $COPYRIGHT;
         exit (0);
+    }
+    elsif ($opt eq 'o') {
+        $outfile = shift @ARGV;
+    }
+    else {
+        print STDERR "sty2dtx: unknown option '-$opt'!\n";
+        exit (2);
     }
 }
 
@@ -280,17 +351,20 @@ while (@ARGV) {
 
 
 # Last (but not only) argument is output filebase, except if it is '-' (=STDOUT)
-if (@files > 1) {
-    my $outfile = pop @files;
-    if ($outfile ne '-') {
-        open (OUTPUT, '>', $outfile) or die ("Could not open output filebase '$outfile'!");
-        select OUTPUT;
-    }
-    $vars{filebase} = substr($outfile, 0, rindex($outfile, '.'));
+if ($outfile || @files > 1) {
+    $outfile = pop @files unless $outfile;
+    $vars{filebase} = substr($outfile, 0, rindex($outfile, '.')) if not exists $vars{filebase};
 }
 elsif (@files == 1) {
     my $infile = $files[0];
-    $vars{filebase} = substr($infile, 0, rindex($infile, '.'));
+    $vars{filebase} = substr($infile, 0, rindex($infile, '.')) if not exists $vars{filebase};
+    if ($usebase) {
+        $outfile = $vars{filebase} . '.dtx';
+    }
+}
+if ($outfile && $outfile ne '-') {
+    open (OUTPUT, '>', $outfile) or die ("Could not open output filebase '$outfile'!");
+    select OUTPUT;
 }
 
 
@@ -387,7 +461,7 @@ while (<>) {
 close_env();
 
 ################################################################################
-# Write output file
+# Write DTX file
 $vars{IMPLEMENTATION} = $IMPL;
 $vars{USAGE}          = $USAGE;
 $vars{type}           = "\L$vars{type}";
@@ -397,17 +471,49 @@ $vars{maintainer}     = $vars{author}
     if not exists $vars{maintainer} and exists $vars{author};
 
 while (<DATA>) {
+    last if /^__INS__$/;
     # Substitute template variables
     s/<\+([^+]+)\+>\n?/exists $vars{$1} ? $vars{$1} : "<+$1+>"/eg;
     print;
 }
 
-exit(0)
+if ($verbose) {
+    print STDERR "Generated DTX file";
+    print STDERR " '$outfile'" if $outfile and $outfile ne '-';
+    print STDERR " with template '$templfile'" if $templfile;
+    print STDERR ".\n";
+}
 
 ################################################################################
-# Write output file
-# The template for the DTX filebase.
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Write INS file if requested
+exit(0) unless $install;
+
+if ( ( !$outfile || $outfile eq '-' ) && !$installfile) {
+    print STDERR "Warning: Did not generate requested .ins file because main file\n";
+    print STDERR "         was written to STDOUT and no -i option was given.\n";
+    exit(1);
+}
+
+if ($installtempl) {
+    open (DATA, '<', $installtempl) or die "Could't open template '$installtempl' for .ins file.";
+}
+$installfile = $vars{filebase} . '.ins' unless defined $installfile;
+open (INS, '>', $installfile) or die "Could't open new .ins file '$installfile'.";
+
+while (<DATA>) {
+    # Substitute template variables
+    s/<\+([^+]+)\+>\n?/exists $vars{$1} ? $vars{$1} : "<+$1+>"/eg;
+    print INS $_;
+}
+
+if ($verbose) {
+    print STDERR "Generated INS file '$installfile'";
+    print STDERR " with template '$installtempl'" if $installtempl;
+    print STDERR ".\n";
+}
+################################################################################
+# The templates for the DTX file and INS file
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # The '<+var+>' still was choosen because it is used by the latex suite for Vim.
 # Therfore all variables which are not expanded are easily accessible to the
 # user using a certain feature in the latex suite.
@@ -514,3 +620,61 @@ __DATA__
 %
 % \Finale
 \endinput
+__INS__
+%% Copyright (C) <+year+> by <+author+> <<+email+>>
+%% --------------------------------------------------------------------------
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.3
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%%   http://www.latex-project.org/lppl.txt
+%% and version 1.3 or later is part of all distributions of LaTeX
+%% version 2005/12/01 or later.
+%%
+%% This work has the LPPL maintenance status `maintained'.
+%%
+%% The Current Maintainer of this work is <+maintainer+>.
+%%
+%% This work consists of the files <+filebase+>.dtx and <+filebase+>.ins
+%% and the derived filebase <+filebase+>.<+extension+>.
+%%
+
+\input docstrip.tex
+\keepsilent
+
+\usedir{tex/latex/<+filebase+>}
+
+\preamble
+
+This is a generated file.
+
+Copyright (C) <+year+> by <+author+> <<+email+>>
+--------------------------------------------------------------------------
+This work may be distributed and/or modified under the
+conditions of the LaTeX Project Public License, either version 1.3
+of this license or (at your option) any later version.
+The latest version of this license is in
+  http://www.latex-project.org/lppl.txt
+and version 1.3 or later is part of all distributions of LaTeX
+version 2005/12/01 or later.
+
+\endpreamble
+
+\generate{\file{<+filebase+>.<+extension+>}{\from{<+filebase+>.dtx}{<+type+>}}}
+
+\obeyspaces
+\Msg{*************************************************************}
+\Msg{*                                                           *}
+\Msg{* To finish the installation you have to move the following *}
+\Msg{* file into a directory searched by TeX:                    *}
+\Msg{*                                                           *}
+\Msg{*     <+filebase+>.sty                                          *}
+\Msg{*                                                           *}
+\Msg{* To produce the documentation run the file <+filebase+>.dtx    *}
+\Msg{* through LaTeX.                                            *}
+\Msg{*                                                           *}
+\Msg{* Happy TeXing!                                             *}
+\Msg{*                                                           *}
+\Msg{*************************************************************}
+
+\endbatchfile
