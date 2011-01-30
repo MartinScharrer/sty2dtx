@@ -90,6 +90,7 @@ Options:
   -V            : Print version and copyright
   -t <template> : Use this file as template instead of the default one
   -e <file>     : Export default template to file and exit
+  -o <output>   : Use given file as output
 
 Examples:
     sty2dtx.pl < infile > outfile
@@ -197,8 +198,17 @@ sub close_env {
     }
 }
 
+my ($mday,$mon,$year) = (localtime(time))[3..5];
+$year += 1900;
+
 my @files;
-my %vars = ( type => 'package', class => 'ltxdoc' );
+# Holds the variables for the templates, is initiated with default values:
+my %vars = (
+    type  => 'package',
+    class => 'ltxdoc',
+    date  => "$year/$mon/$mday",
+    year  => "$year",
+);
 
 # Handle options
 sub option {
@@ -382,6 +392,9 @@ $vars{IMPLEMENTATION} = $IMPL;
 $vars{USAGE}          = $USAGE;
 $vars{type}           = "\L$vars{type}";
 $vars{Type}           = "\L\u$vars{type}";
+$vars{extension}      = $vars{type} eq 'class' ? 'cls' : 'sty';
+$vars{maintainer}     = $vars{author}
+    if not exists $vars{maintainer} and exists $vars{author};
 
 while (<DATA>) {
     # Substitute template variables
@@ -403,7 +416,7 @@ __DATA__
 % \iffalse meta-comment
 %
 % Copyright (C) <+year+> by <+author+> <<+email+>>
-% -------------------------------------------------------
+% ---------------------------------------------------------------------------
 % This work may be distributed and/or modified under the
 % conditions of the LaTeX Project Public License, either version 1.3
 % of this license or (at your option) any later version.
@@ -417,7 +430,7 @@ __DATA__
 % The Current Maintainer of this work is <+maintainer+>.
 %
 % This work consists of the files <+filebase+>.dtx and <+filebase+>.ins
-% and the derived filebase <+filebase+>.sty.
+% and the derived filebase <+filebase+>.<+extension+>.
 %
 % \fi
 %
