@@ -90,6 +90,7 @@ Options:
   -V            : Print version and copyright
   -v            : Be verbose
   -o <output>   : Use given file as output
+  -O            : Overwrite already existing output file(s)
   -B            : Use basename of single input file for output file
   -I            : Also create .ins (install) file
   -i <ins file> : Create .ins file with given name
@@ -123,6 +124,7 @@ EOT
     exit (0);
 }
 
+my $ERROR = "sty2dtx: Error:";
 
 # Used as format string of printf so that the '%' must be doubled:
 my $macrostart = <<'EOT';
@@ -228,6 +230,7 @@ my $outfile = '';
 my $verbose = 0;
 my $install = 0;
 my $usebase = 0;
+my $overwrite = 0;
 my $installfile;
 my $templfile;
 my $installtempl;
@@ -258,12 +261,12 @@ sub option {
     elsif ($opt eq 't') {
         close (DATA);
         $templfile = shift @ARGV;
-        open (DATA, '<', $templfile) or die "Couldn't open template file '$templfile'\n";
+        open (DATA, '<', $templfile) or die "$ERROR Couldn't open template file '$templfile'\n";
     }
     elsif ($opt eq 'e') {
         my $templ = shift @ARGV;
         if ($templfile ne '-') {
-            open (STDOUT, '>', $templ) or die "Couldn't open new template file '$templ'\n";
+            open (STDOUT, '>', $templ) or die "$ERROR Couldn't open new template file '$templ'\n";
         }
         while (<DATA>) {
             last if /^__INS__$/;
@@ -275,7 +278,7 @@ sub option {
     elsif ($opt eq 'E') {
         my $templ = shift @ARGV;
         if ($templ ne '-') {
-            open (STDOUT, '>', $templ) or die "Couldn't open new template file '$templ'\n";
+            open (STDOUT, '>', $templ) or die "$ERROR Couldn't open new template file '$templ'\n";
         }
         while (<DATA>) {
             last if /^__INS__$/;
@@ -307,6 +310,9 @@ sub option {
     }
     elsif ($opt eq 'o') {
         $outfile = shift @ARGV;
+    }
+    elsif ($opt eq 'O') {
+        $overwrite = 1;
     }
     else {
         print STDERR "sty2dtx: unknown option '-$opt'!\n";
@@ -363,7 +369,10 @@ elsif (@files == 1) {
     }
 }
 if ($outfile && $outfile ne '-') {
-    open (OUTPUT, '>', $outfile) or die ("Could not open output filebase '$outfile'!");
+    if (!$overwrite && -e $outfile && $outfile ne '/dev/null') {
+        die ("$ERROR output file '$outfile' does already exists! Use the -O option to overwrite.\n");
+    }
+    open (OUTPUT, '>', $outfile) or die ("$ERROR Could not open output file '$outfile'!");
     select OUTPUT;
 }
 
@@ -495,10 +504,13 @@ if ( ( !$outfile || $outfile eq '-' ) && !$installfile) {
 }
 
 if ($installtempl) {
-    open (DATA, '<', $installtempl) or die "Could't open template '$installtempl' for .ins file.";
+    open (DATA, '<', $installtempl) or die "$ERROR Could't open template '$installtempl' for .ins file.";
 }
 $installfile = $vars{filebase} . '.ins' unless defined $installfile;
-open (INS, '>', $installfile) or die "Could't open new .ins file '$installfile'.";
+if (!$overwrite && -e $installfile && $installfile ne '/dev/null') {
+    die ("$ERROR Output file '$installfile' does already exists! Use the -O option to overwrite.\n");
+}
+open (INS, '>', $installfile) or die "$ERROR Could't open new .ins file '$installfile'.";
 
 while (<DATA>) {
     # Substitute template variables
