@@ -1,36 +1,56 @@
 #!/usr/bin/env perl
 ################################################################################
-# Copyright (c) 2010-2011 Martin Scharrer <martin@scharrer-online.de>
-# This is open source software under the GPL v3 or later.
-#
-# Converts a .sty filebase (LaTeX package) to .dtx format (documented LaTeX source),
-# by surrounding macro definitions with 'macro' and 'macrocode' environments.
-# The macro name is automatically inserted as an argument to the 'macro'
-# environemnt.
-# Code lines outside macro definitions are wrapped only in 'macrocode'
-# environments. Empty lines are removed.
-# The script is not thought to be fool proof and 100% accurate but rather
-# as a good start to convert undocumented style filebase to .dtx files.
-#
-# Usage:
-#    perl sty2dtx.pl infile [infile ...] outfile
-# or
-#    perl sty2dtx.pl < filebase.sty > filebase.dtx
-#
-#
-# The following macro definitions are detected when they are at the start of a
-# line (can be prefixed by \global, \long, \protected and/or \outer):
-#   \def   \edef   \gdef   \xdef
-#   \newcommand{\name}     \newcommand*{\name}
-#   \newcommand\name       \newcommand*\name
-#   \renewcommand{\name}   \renewcommand*{\name}
-#   \renewcommand\name     \renewcommand*\name
-#   \providecommand{\name} \providecommand*{\name}
-#   \providecommand\name   \providecommand*\name
-#   \@namedef{\name}       \@namedef\name
-#
-# The macro definition must either end at the same line or with a '}' on its own
-# on a line.
+my $VERSION = substr('$Date: $', 7, 10);
+my $TITLE = << "EOT";
+  sty2dtx -- Converts a LaTeX .sty file to a documented .dtx file
+  Version: $VERSION
+EOT
+my $COPYRIGHT = << 'EOT';
+  Copyright (c) 2010-2011 Martin Scharrer <martin@scharrer-online.de>
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+EOT
+my $DESCRIPTION = << 'EOT';
+  Converts a .sty filebase (LaTeX package) to .dtx format (documented LaTeX source),
+  by surrounding macro definitions with 'macro' and 'macrocode' environments.
+  The macro name is automatically inserted as an argument to the 'macro'
+  environemnt.
+  Code lines outside macro definitions are wrapped only in 'macrocode'
+  environments. Empty lines are removed.
+  The script is not thought to be fool proof and 100% accurate but rather
+  as a good start to convert undocumented style filebase to .dtx files.
+ 
+  Usage:
+     perl sty2dtx.pl infile [infile ...] outfile
+  or
+     perl sty2dtx.pl < filebase.sty > filebase.dtx
+ 
+ 
+  The following macro definitions are detected when they are at the start of a
+  line (can be prefixed by \global, \long, \protected and/or \outer):
+    \def   \edef   \gdef   \xdef
+    \newcommand{\name}     \newcommand*{\name}
+    \newcommand\name       \newcommand*\name
+    \renewcommand{\name}   \renewcommand*{\name}
+    \renewcommand\name     \renewcommand*\name
+    \providecommand{\name} \providecommand*{\name}
+    \providecommand\name   \providecommand*\name
+    \@namedef{\name}       \@namedef\name
+ 
+  The macro definition must either end at the same line or with a '}' on its own
+  on a line.
+EOT
 #
 # $Id$
 ################################################################################
@@ -134,9 +154,11 @@ sub close_env {
 }
 
 sub usage {
-    print << 'EOT';
+    print << "EOT";
 sty2dtx.pl [<options>] [--<VAR>=<VALUE> ...] [--] [<infile> ...] [<outfile>]
-
+Version: $VERSION
+EOT
+    print << 'EOT';
 Files:
   * can be '-' for STDIN or STDOUT, which is the default if no files are given
   * multiple input files are merged to one output file
@@ -150,7 +172,9 @@ Variables:
       filebase (automatically set from output or input file name)
 
 Options:
-  -h            : This help text
+  -h            : Print this help text
+  -H            : Print extended help
+  -V            : Print version and copyright
   -t <template> : Use this file as template instead of the default one
   -e <file>     : Export default template to file and exit
   -p            : Generate DTX file for a package (default)
@@ -173,6 +197,12 @@ sub option {
     if ($opt eq 'h') {
         usage();
     }
+    elsif ($opt eq 'H') {
+        print $TITLE;
+        print "\n";
+        print $DESCRIPTION;
+        exit (0);
+    }
     elsif ($opt eq 't') {
         close (DATA);
         my $templ = shift @ARGV;
@@ -184,6 +214,12 @@ sub option {
         print TEMPL <DATA>;
         close (TEMPL);
         print STDERR "Exported default template to file '$templ'\n";
+        exit (0);
+    }
+    elsif ($opt eq 'V') {
+        print $TITLE;
+        print "\n";
+        print $COPYRIGHT;
         exit (0);
     }
 }
@@ -198,7 +234,9 @@ while (@ARGV) {
         my $dashes = $1;
         my $name   = $2;
         if (length($dashes) == 1) {
-            option($name);
+            foreach my $opt (split //, $name) {
+                option($opt);
+            }
         }
         elsif ($name =~ /^([^=]+)=(.*)$/) {
                 $vars{lc($1)} = $2;
