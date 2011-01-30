@@ -3,19 +3,19 @@
 # Copyright (c) 2010-2011 Martin Scharrer <martin@scharrer-online.de>
 # This is open source software under the GPL v3 or later.
 #
-# Converts a .sty file (LaTeX package) to .dtx format (documented LaTeX source),
+# Converts a .sty filebase (LaTeX package) to .dtx format (documented LaTeX source),
 # by surrounding macro definitions with 'macro' and 'macrocode' environments.
 # The macro name is automatically inserted as an argument to the 'macro'
 # environemnt.
 # Code lines outside macro definitions are wrapped only in 'macrocode'
 # environments. Empty lines are removed.
 # The script is not thought to be fool proof and 100% accurate but rather
-# as a good start to convert undocumented style file to .dtx files.
+# as a good start to convert undocumented style filebase to .dtx files.
 #
 # Usage:
 #    perl sty2dtx.pl infile [infile ...] outfile
 # or
-#    perl sty2dtx.pl < file.sty > file.dtx
+#    perl sty2dtx.pl < filebase.sty > filebase.dtx
 #
 #
 # The following macro definitions are detected when they are at the start of a
@@ -82,8 +82,8 @@ my $macrocodestop = <<'EOT';
 %
 EOT
 
-my @USAGE;  # Store usage section
-my @IMPL;   # Store implementation section
+my $USAGE;  # Store macro names for usage section
+my $IMPL;   # Store implementation section
 
 my $mode = 0;
 # 0 = outside of macro or macrocode environments
@@ -123,26 +123,112 @@ my $renvdef = qr/
 sub close_env {
     if ( $mode == 1 ) {
         # Happens only if closing brace is not on a line by its own.
-        push @IMPL, $macrostop;
+        $IMPL .= $macrostop;
     }
     elsif ( $mode == 2 ) {
-        push @IMPL, $macrocodestop;
+        $IMPL .= $macrocodestop;
     }
     elsif ( $mode == 3 ) {
-        push @IMPL, $environmentstop;
+        $IMPL .= $environmentstop;
+    }
+}
+
+sub usage {
+    print << 'EOT';
+sty2dtx.pl [<options>] [--<VAR>=<VALUE> ...] [--] [<infile> ...] [<outfile>]
+
+Files:
+  * can be '-' for STDIN or STDOUT, which is the default if no files are given
+  * multiple input files are merged to one output file
+
+Variables:
+  can be defined using --<VAR>=<VALUE> or --<VAR> <VALUE> and will be used for
+  substitutions in the template file.
+  Common variables:
+      author, email, maintainer, year (for copyright),
+      version, date, description (of package),
+      filebase (automatically set from output or input file name)
+
+Options:
+  -h            : This help text
+  -t <template> : Use this file as template instead of the default one
+  -e <file>     : Export default template to file and exit
+  -p            : Generate DTX file for a package (default)
+  -c            : Generate DTX file for a class
+
+Examples:
+    sty2dtx.pl < infile > outfile
+    sty2dtx.pl --author Me --email me@there.com mypkg.sty mypkg.dtx
+    sty2dtx.pl -c mycls.sty mycls.dtx
+
+EOT
+    exit (0);
+}
+
+my @files;
+my %vars;
+
+sub option {
+    my $opt = shift;
+    if ($opt eq 'h') {
+        usage();
+    }
+    elsif ($opt eq 't') {
+        close (DATA);
+        my $templ = shift @ARGV;
+        open (DATA, '<', $templ) or die "Couldn't open template file '$templ'\n";
+    }
+    elsif ($opt eq 'e') {
+        my $templ = shift @ARGV;
+        open (TEMPL, '>', $templ) or die "Couldn't open new template file '$templ'\n";
+        print TEMPL <DATA>;
+        close (TEMPL);
+        print STDERR "Exported default template to file '$templ'\n";
+        exit (0);
+    }
+}
+
+while (@ARGV) {
+    my $arg = shift;
+    if ($arg eq '--' ) {
+        push @files, @ARGV;
+        last;
+    }
+    elsif ($arg =~ /^(-+)(.+)$/ ) {
+        my $dashes = $1;
+        my $name   = $2;
+        if (length($dashes) == 1) {
+            option($name);
+        }
+        elsif ($name =~ /^([^=]+)=(.*)$/) {
+                $vars{lc($1)} = $2;
+        }
+        else {
+            $vars{lc($name)} = shift;
+        }
+    }
+    else {
+        push @files, $arg;
     }
 }
 
 
-# Last (but not only) argument is output file, except if it is '-' (=STDOUT)
-if (@ARGV > 1) {
-    my $outfile = pop;
+# Last (but not only) argument is output filebase, except if it is '-' (=STDOUT)
+if (@files > 1) {
+    my $outfile = pop @files;
     if ($outfile ne '-') {
-        open (OUTPUT, '>', $outfile) or die ("Could not open output file '$outfile'!");
+        open (OUTPUT, '>', $outfile) or die ("Could not open output filebase '$outfile'!");
         select OUTPUT;
     }
+    $vars{filebase} = substr($outfile, 0, rindex($outfile, '.'));
+}
+elsif (@files == 1) {
+    my $infile = $files[0];
+    $vars{filebase} = substr($infile, 0, rindex($infile, '.'));
 }
 
+
+@ARGV = @files;
 while (<>) {
     # Test for macro definition command
     if (/$rmacrodef/) {
@@ -153,14 +239,14 @@ while (<>) {
 
         # Add to usage section if it is a user level macro
         if ($name =~ /^$rusermacro$/i) {
-            push @USAGE, sprintf ($macrodescription, $name);
+            $USAGE .= sprintf ($macrodescription, $name);
         }
 
         close_env();
 
         # Print 'macro' environment with current line.
-        push @IMPL, sprintf( $macrostart, $name );
-        push @IMPL, $_;
+        $IMPL .= sprintf( $macrostart, $name );
+        $IMPL .= $_;
 
         # Inside macro mode
         $mode = 1;
@@ -169,7 +255,7 @@ while (<>) {
         # $pre is tested to handle '{\somecatcodechange\gdef\name{short}}' lines
         my $prenrest = $pre . $rest;
         if ( $prenrest =~ tr/{/{/ == $prenrest =~ tr/}/}/ ) {
-            push @IMPL, $macrostop;
+            $IMPL .= $macrostop;
             # Outside mode
             $mode = 0;
         }
@@ -183,14 +269,14 @@ while (<>) {
         # Add to usage section if it is a user level environment
         # Can use the same RegEx as for macro names
         if ($name =~ /^$rusermacro$/i) {
-            push @USAGE, sprintf ($envdescription, $name);
+            $USAGE .= sprintf ($envdescription, $name);
         }
 
         close_env();
 
         # Print 'environment' environment with current line.
-        push @IMPL, sprintf( $environmentstart, $name );
-        push @IMPL, $_;
+        $IMPL .= sprintf( $environmentstart, $name );
+        $IMPL .= $_;
 
         # Inside environment mode
         $mode = 3;
@@ -198,20 +284,20 @@ while (<>) {
         # Test for one line definitions.
         my $nopen  = ($rest =~ tr/{/{/);
         if ( $nopen >= 2 && $nopen == ($rest =~ tr/}/}/) ) {
-            push @IMPL, $environmentstop;
+            $IMPL .= $environmentstop;
             # Outside mode
             $mode = 0;
         }
     }
     # A single '}' on a line ends a 'macro' environment in macro mode
     elsif ($mode == 1 && /^}\s*$/) {
-        push @IMPL, $_, $macrostop;
+        $IMPL .= $_ . $macrostop;
         $mode = 0;
     }
     # A single '}' on a line ends a 'environemnt' environment in environment
     # mode
     elsif ($mode == 3 && /^}\s*$/) {
-        push @IMPL, $_, $environmentstop;
+        $IMPL .= $_ . $environmentstop;
         $mode = 0;
     }
     # Remove empty lines (mostly between macros)
@@ -220,11 +306,11 @@ while (<>) {
     else {
         # If inside an environment
         if ($mode) {
-            push @IMPL, $_;
+            $IMPL .= $_;
         }
         else {
             # Start macrocode environment
-            push @IMPL, $macrocodestart, $_;
+            $IMPL .= $macrocodestart . $_;
             $mode = 2;
         }
     }
@@ -232,10 +318,8 @@ while (<>) {
 
 close_env();
 
-my %vars = (
-    IMPLEMENTATION => join ('', @IMPL),
-    USAGE          => join ('', @USAGE),
-);
+$vars{IMPLEMENTATION} = $IMPL;
+$vars{USAGE}          = $USAGE;
 
 while (<DATA>) {
     s/<\+([^+]+)\+>\n?/exists $vars{$1} ? $vars{$1} : "<+$1+>"/eg;
@@ -243,7 +327,7 @@ while (<DATA>) {
 }
 
 #
-# The template for the DTX file.
+# The template for the DTX filebase.
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # The '<+var+>' still was choosen because it is used by the latex suite for Vim.
 # Therfore all variables which are not expanded are easily accessible to the
@@ -266,29 +350,29 @@ __DATA__
 %
 % The Current Maintainer of this work is <+maintainer+>.
 %
-% This work consists of the files <+file+>.dtx and <+file+>.ins
-% and the derived file <+file+>.sty.
+% This work consists of the files <+filebase+>.dtx and <+filebase+>.ins
+% and the derived filebase <+filebase+>.sty.
 %
 % \fi
 %
 % \iffalse
 %<*driver>
-\ProvidesFile{skeleton.dtx}
+\ProvidesFile{<+filebase+>.dtx}
 %</driver>
 %<package>\NeedsTeXFormat{LaTeX2e}[1999/12/01]
-%<package>\ProvidesPackage{<+file+>}
+%<package>\ProvidesPackage{<+filebase+>}
 %<*package>
     [<+vdate+> <+version+> <+description+>]
 %</package>
 %
 %<*driver>
 \documentclass{ltxdoc}
-\usepackage{<+file+>}[<+vdate+>]
+\usepackage{<+filebase+>}[<+vdate+>]
 \EnableCrossrefs
 \CodelineIndex
 \RecordChanges
 \begin{document}
-  \DocInput{<+file+>.dtx}
+  \DocInput{<+filebase+>.dtx}
   \PrintChanges
   \PrintIndex
 \end{document}
@@ -314,12 +398,12 @@ __DATA__
 %   Right brace   \}     Tilde         \~}
 %
 %
-% \changes{<+version+>}{<+vdate+>}{Converted to DTX file}
+% \changes{<+version+>}{<+vdate+>}{Converted to DTX filebase}
 %
 % \DoNotIndex{\newcommand,\newenvironment}
 %
-% \GetFileInfo{<+file+>.dtx}
-% \title{The \textsf{<+file+>} package}
+% \GetFileInfo{<+filebase+>.dtx}
+% \title{The \textsf{<+filebase+>} package}
 % \author{<+author+> \\ \url{<+email+>}}
 % \date{\fileversion from \filedate}
 %
