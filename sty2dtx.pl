@@ -43,6 +43,11 @@ my $macrostart = <<'EOT';
 %%    \begin{macrocode}
 EOT
 
+my $environmentstart = <<'EOT';
+%% \begin{environment}{%s}
+%%    \begin{macrocode}
+EOT
+
 my $macrodescription = <<'EOT';
 %%
 %% \DescribeMacro{\%s}
@@ -59,6 +64,12 @@ EOT
 my $macrostop = <<'EOT';
 %    \end{macrocode}
 % \end{macro}
+%
+EOT
+
+my $environmentstop = <<'EOT';
+%    \end{macrocode}
+% \end{environment}
 %
 EOT
 
@@ -80,8 +91,9 @@ my $mode = 0;
 # 2 = inside macrocode environment
 
 # RegExs for macro names and defintion:
-my $macroname = qr/[a-zA-Z\@:]+/;    # Add ':' for LaTeX3 style macros
-my $definition = qr/
+my $rmacroname = qr/[a-zA-Z\@:]+/;    # Add ':' for LaTeX3 style macros
+my $rusermacro = qr/[a-zA-Z]+/;       # Macros intended for users
+my $rmacrodef = qr/
     ^                                                        # Begin of line (no whitespaces!)
      (
        (?:(?:\\global|\\long|\\protected|\\outer)\s*)*       # Prefixes (maybe with whitespace between them)
@@ -91,9 +103,36 @@ my $definition = qr/
         | (?:new|renew|provide)command\s* \*? \s* {? \s* \\  # LaTeX definitions
         | \@namedef{?                                        # Definition by name only
      )
-     ($macroname)                                            # Macro name without backslash
+     ($rmacroname)                                           # Macro name without backslash
+     \s* }?                                                  # Potential closing brace
      (.*)                                                    # Rest of line
     /xms;
+
+my $renvdef = qr/
+    ^                                                        # Begin of line (no whitespaces!)
+     \\(
+        (?:new|renew|provide)environment\s* { \s*            # LaTeX definitions
+     )
+     ($rmacroname)                                           # Environment names follow same rules as macro names
+     \s* }                                                   # closing brace
+     (.*)                                                    # Rest of line
+    /xms;
+
+
+# Print end of environment, if one is open
+sub close_env {
+    if ( $mode == 1 ) {
+        # Happens only if closing brace is not on a line by its own.
+        push @IMPL, $macrostop;
+    }
+    elsif ( $mode == 2 ) {
+        push @IMPL, $macrocodestop;
+    }
+    elsif ( $mode == 3 ) {
+        push @IMPL, $environmentstop;
+    }
+}
+
 
 # Last (but not only) argument is output file, except if it is '-' (=STDOUT)
 if (@ARGV > 1) {
@@ -106,27 +145,18 @@ if (@ARGV > 1) {
 
 while (<>) {
     # Test for macro definition command
-    if (/$definition/) {
+    if (/$rmacrodef/) {
         my $pre  = $1 || "";    # before command
         my $cmd  = $2;          # definition command
         my $name = $3;          # macro name
         my $rest = $4;          # rest of line
-        if ( $cmd =~ /command\*?{/ ) {
-            $rest =~ s/^}//;    # handle '\newcommand{\name}
-        }
-        print STDERR $name, "\n";
-        if ($name =~ /^[a-z]+$/i) {
+
+        # Add to usage section if it is a user level macro
+        if ($name =~ /^$rusermacro$/i) {
             push @USAGE, sprintf ($macrodescription, $name);
         }
 
-        # Print end of environment, if one is open
-        if ( $mode == 1 ) {
-            # Happens only if closing brace is not on a line by its own.
-            push @IMPL, $macrostop;
-        }
-        elsif ( $mode == 2 ) {
-            push @IMPL, $macrocodestop;
-        }
+        close_env();
 
         # Print 'macro' environment with current line.
         push @IMPL, sprintf( $macrostart, $name );
@@ -144,9 +174,44 @@ while (<>) {
             $mode = 0;
         }
     }
-    # A single '}' on a line ends a 'macro' environment
+    # Test for environment definition command
+    elsif (/$renvdef/) {
+        my $cmd  = $1;          # definition command
+        my $name = $2;          # macro name
+        my $rest = $3;          # rest of line
+
+        # Add to usage section if it is a user level environment
+        # Can use the same RegEx as for macro names
+        if ($name =~ /^$rusermacro$/i) {
+            push @USAGE, sprintf ($envdescription, $name);
+        }
+
+        close_env();
+
+        # Print 'environment' environment with current line.
+        push @IMPL, sprintf( $environmentstart, $name );
+        push @IMPL, $_;
+
+        # Inside environment mode
+        $mode = 3;
+
+        # Test for one line definitions.
+        my $nopen  = ($rest =~ tr/{/{/);
+        if ( $nopen >= 2 && $nopen == ($rest =~ tr/}/}/) ) {
+            push @IMPL, $environmentstop;
+            # Outside mode
+            $mode = 0;
+        }
+    }
+    # A single '}' on a line ends a 'macro' environment in macro mode
     elsif ($mode == 1 && /^}\s*$/) {
         push @IMPL, $_, $macrostop;
+        $mode = 0;
+    }
+    # A single '}' on a line ends a 'environemnt' environment in environment
+    # mode
+    elsif ($mode == 3 && /^}\s*$/) {
+        push @IMPL, $_, $environmentstop;
         $mode = 0;
     }
     # Remove empty lines (mostly between macros)
@@ -165,14 +230,7 @@ while (<>) {
     }
 }
 
-# Print end of environment, if one is open
-if ( $mode == 1 ) {
-    # Happens only if closing brace is not on a line by its own.
-    push @IMPL, $macrostop;
-}
-elsif ( $mode == 2 ) {
-    push @IMPL, $macrocodestop;
-}
+close_env();
 
 my %vars = (
     IMPLEMENTATION => join ('', @IMPL),
@@ -183,9 +241,6 @@ while (<DATA>) {
     s/<\+([^+]+)\+>\n?/exists $vars{$1} ? $vars{$1} : "<+$1+>"/eg;
     print;
 }
-
-use Data::Dumper;
-print STDERR Dumper \@USAGE;
 
 #
 # The template for the DTX file.
