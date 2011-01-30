@@ -98,6 +98,7 @@ Options:
   -T <template> : Use this file as template for the .ins file
   -e <file>     : Export default .dtx template to file and exit
   -E <file>     : Export default .ins template to file and exit
+  -D            : Use current date as file date
 
 Examples:
   Produce 'file.dtx' from 'file.sty':
@@ -223,6 +224,7 @@ sub close_env {
 }
 
 my ($mday,$mon,$year) = (localtime(time))[3..5];
+$mon = sprintf("%02d", $mon + 1);
 $year += 1900;
 
 my @files;
@@ -234,12 +236,12 @@ my $overwrite = 0;
 my $installfile;
 my $templfile;
 my $installtempl;
+my $checksum = 0;
 
 # Holds the variables for the templates, is initiated with default values:
 my %vars = (
     type  => 'package',
     class => 'ltxdoc',
-    date  => "$year/$mon/$mday",
     year  => "$year",
 );
 
@@ -272,7 +274,8 @@ sub option {
             last if /^__INS__$/;
             print;
         }
-        print STDERR "Exported default template for .dtx files to file '$templ'\n";
+        print STDERR "Exported default template for .dtx files to file '$templ'\n"
+            if $verbose;
         exit (0);
     }
     elsif ($opt eq 'E') {
@@ -286,7 +289,8 @@ sub option {
         while (<DATA>) {
             print;
         }
-        print STDERR "Exported default template for .ins files to file '$templ'\n";
+        print STDERR "Exported default template for .ins files to file '$templ'\n"
+            if $verbose;
         exit (0);
     }
     elsif ($opt eq 'v') {
@@ -308,6 +312,9 @@ sub option {
         print $COPYRIGHT;
         exit (0);
     }
+    elsif ($opt eq 'D') {
+        $vars{date} = "$year/$mon/$mday";
+    }
     elsif ($opt eq 'o') {
         $outfile = shift @ARGV;
     }
@@ -318,6 +325,12 @@ sub option {
         print STDERR "sty2dtx: unknown option '-$opt'!\n";
         exit (2);
     }
+}
+
+# Count number of backslashes in code for file checksum
+sub addtochecksum {
+    my $line = shift;
+    $checksum += $line =~ tr{\\}{\\};
 }
 
 ################################################################################
@@ -356,7 +369,7 @@ while (@ARGV) {
 }
 
 
-# Last (but not only) argument is output filebase, except if it is '-' (=STDOUT)
+# Last (but not only) argument is output file, except if it is '-' (=STDOUT)
 if ($outfile || @files > 1) {
     $outfile = pop @files unless $outfile;
     $vars{filebase} = substr($outfile, 0, rindex($outfile, '.')) if not exists $vars{filebase};
@@ -397,6 +410,7 @@ while (<>) {
 
         # Print 'macro' environment with current line.
         $IMPL .= sprintf( $macrostart, $name );
+        addtochecksum($_);
         $IMPL .= $_;
 
         # Inside macro mode
@@ -427,6 +441,7 @@ while (<>) {
 
         # Print 'environment' environment with current line.
         $IMPL .= sprintf( $environmentstart, $name );
+        addtochecksum($_);
         $IMPL .= $_;
 
         # Inside environment mode
@@ -442,12 +457,14 @@ while (<>) {
     }
     # A single '}' on a line ends a 'macro' environment in macro mode
     elsif ($mode == 1 && /^}\s*$/) {
+        addtochecksum($_);
         $IMPL .= $_ . $macrostop;
         $mode = 0;
     }
     # A single '}' on a line ends a 'environemnt' environment in environment
     # mode
     elsif ($mode == 3 && /^}\s*$/) {
+        addtochecksum($_);
         $IMPL .= $_ . $environmentstop;
         $mode = 0;
     }
@@ -457,17 +474,30 @@ while (<>) {
     else {
         # If inside an environment
         if ($mode) {
+            addtochecksum($_);
             $IMPL .= $_;
         }
         else {
             # Start macrocode environment
             $IMPL .= $macrocodestart . $_;
+            addtochecksum($_);
             $mode = 2;
         }
     }
 }
 
 close_env();
+
+################################################################################
+# Set extra/auto variables
+$vars{IMPLEMENTATION} = $IMPL;
+$vars{USAGE}      = $USAGE;
+$vars{type}       = "\L$vars{type}";
+$vars{Type}       = "\L\u$vars{type}";
+$vars{extension}  = $vars{type} eq 'class' ? 'cls' : 'sty';
+$vars{checksum}   = $checksum if not exists $vars{checksum}; # Allow user to overwrite
+$vars{maintainer} = $vars{author}
+    if not exists $vars{maintainer} and exists $vars{author};
 
 ################################################################################
 # Write DTX file
@@ -526,7 +556,8 @@ if ($verbose) {
 ################################################################################
 # The templates for the DTX file and INS file
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# The '<+var+>' still was choosen because it is used by the latex suite for Vim.
+# Adepted from the skeleton file provided by the 'dtxtut' (DTX tuturial).
+# The '<+var+>' format was choosen because it is used by the latex suite for Vim.
 # Therfore all variables which are not expanded are easily accessible to the
 # user using a certain feature in the latex suite.
 #
@@ -576,7 +607,7 @@ __DATA__
 %</driver>
 % \fi
 %
-% \CheckSum{0}
+% \CheckSum{<+checksum+>}
 %
 % \CharacterTable
 %  {Upper-case    \A\B\C\D\E\F\G\H\I\J\K\L\M\N\O\P\Q\R\S\T\U\V\W\X\Y\Z
@@ -595,14 +626,15 @@ __DATA__
 %   Right brace   \}     Tilde         \~}
 %
 %
-% \changes{<+version+>}{<+date+>}{Converted to DTX filebase}
+% \changes{<+version+>}{<+date+>}{Converted to DTX file}
 %
 % \DoNotIndex{\newcommand,\newenvironment}
 %
+% \providecommand*{\url}{\texttt}
 % \GetFileInfo{<+filebase+>.dtx}
 % \title{The \textsf{<+filebase+>} package}
 % \author{<+author+> \\ \url{<+email+>}}
-% \date{\fileversion from \filedate}
+% \date{\fileversion~from \filedate}
 %
 % \maketitle
 %
@@ -680,7 +712,7 @@ version 2005/12/01 or later.
 \Msg{* To finish the installation you have to move the following *}
 \Msg{* file into a directory searched by TeX:                    *}
 \Msg{*                                                           *}
-\Msg{*     <+filebase+>.sty                                          *}
+\Msg{*     <+filebase+>.<+extension+>                                          *}
 \Msg{*                                                           *}
 \Msg{* To produce the documentation run the file <+filebase+>.dtx    *}
 \Msg{* through LaTeX.                                            *}
