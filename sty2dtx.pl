@@ -43,6 +43,18 @@ my $macrostart = <<'EOT';
 %%    \begin{macrocode}
 EOT
 
+my $macrodescription = <<'EOT';
+%%
+%% \DescribeMacro{\%s}
+%%
+EOT
+
+my $envdescription = <<'EOT';
+%%
+%% \DescribeEnv{%s}
+%%
+EOT
+
 # Printed normally:
 my $macrostop = <<'EOT';
 %    \end{macrocode}
@@ -59,8 +71,10 @@ my $macrocodestop = <<'EOT';
 %
 EOT
 
-my $mode = 0;
+my @USAGE;  # Store usage section
+my @IMPL;   # Store implementation section
 
+my $mode = 0;
 # 0 = outside of macro or macrocode environments
 # 1 = inside macro environment
 # 2 = inside macrocode environment
@@ -100,19 +114,23 @@ while (<>) {
         if ( $cmd =~ /command\*?{/ ) {
             $rest =~ s/^}//;    # handle '\newcommand{\name}
         }
+        print STDERR $name, "\n";
+        if ($name =~ /^[a-z]+$/i) {
+            push @USAGE, sprintf ($macrodescription, $name);
+        }
 
         # Print end of environment, if one is open
         if ( $mode == 1 ) {
             # Happens only if closing brace is not on a line by its own.
-            print $macrostop;
+            push @IMPL, $macrostop;
         }
         elsif ( $mode == 2 ) {
-            print $macrocodestop;
+            push @IMPL, $macrocodestop;
         }
 
         # Print 'macro' environment with current line.
-        printf $macrostart, $name;
-        print $_;
+        push @IMPL, sprintf( $macrostart, $name );
+        push @IMPL, $_;
 
         # Inside macro mode
         $mode = 1;
@@ -121,14 +139,14 @@ while (<>) {
         # $pre is tested to handle '{\somecatcodechange\gdef\name{short}}' lines
         my $prenrest = $pre . $rest;
         if ( $prenrest =~ tr/{/{/ == $prenrest =~ tr/}/}/ ) {
-            print $macrostop;
+            push @IMPL, $macrostop;
             # Outside mode
             $mode = 0;
         }
     }
     # A single '}' on a line ends a 'macro' environment
     elsif ($mode == 1 && /^}\s*$/) {
-        print $_, $macrostop;
+        push @IMPL, $_, $macrostop;
         $mode = 0;
     }
     # Remove empty lines (mostly between macros)
@@ -137,11 +155,11 @@ while (<>) {
     else {
         # If inside an environment
         if ($mode) {
-            print;
+            push @IMPL, $_;
         }
         else {
             # Start macrocode environment
-            print $macrocodestart, $_;
+            push @IMPL, $macrocodestart, $_;
             $mode = 2;
         }
     }
@@ -150,11 +168,123 @@ while (<>) {
 # Print end of environment, if one is open
 if ( $mode == 1 ) {
     # Happens only if closing brace is not on a line by its own.
-    print $macrostop;
+    push @IMPL, $macrostop;
 }
 elsif ( $mode == 2 ) {
-    print $macrocodestop;
+    push @IMPL, $macrocodestop;
 }
 
-__END__
+my %vars = (
+    IMPLEMENTATION => join ('', @IMPL),
+    USAGE          => join ('', @USAGE),
+);
 
+while (<DATA>) {
+    s/<\+([^+]+)\+>\n?/exists $vars{$1} ? $vars{$1} : "<+$1+>"/eg;
+    print;
+}
+
+use Data::Dumper;
+print STDERR Dumper \@USAGE;
+
+#
+# The template for the DTX file.
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# The '<+var+>' still was choosen because it is used by the latex suite for Vim.
+# Therfore all variables which are not expanded are easily accessible to the
+# user using a certain feature in the latex suite.
+#
+__DATA__
+% \iffalse meta-comment
+%
+% Copyright (C) <+year+> by <+author+> <<+email+>>
+% -------------------------------------------------------
+% This work may be distributed and/or modified under the
+% conditions of the LaTeX Project Public License, either version 1.3
+% of this license or (at your option) any later version.
+% The latest version of this license is in
+%   http://www.latex-project.org/lppl.txt
+% and version 1.3 or later is part of all distributions of LaTeX
+% version 2005/12/01 or later.
+%
+% This work has the LPPL maintenance status `maintained'.
+%
+% The Current Maintainer of this work is <+maintainer+>.
+%
+% This work consists of the files <+file+>.dtx and <+file+>.ins
+% and the derived file <+file+>.sty.
+%
+% \fi
+%
+% \iffalse
+%<*driver>
+\ProvidesFile{skeleton.dtx}
+%</driver>
+%<package>\NeedsTeXFormat{LaTeX2e}[1999/12/01]
+%<package>\ProvidesPackage{<+file+>}
+%<*package>
+    [<+vdate+> <+version+> <+description+>]
+%</package>
+%
+%<*driver>
+\documentclass{ltxdoc}
+\usepackage{<+file+>}[<+vdate+>]
+\EnableCrossrefs
+\CodelineIndex
+\RecordChanges
+\begin{document}
+  \DocInput{<+file+>.dtx}
+  \PrintChanges
+  \PrintIndex
+\end{document}
+%</driver>
+% \fi
+%
+% \CheckSum{0}
+%
+% \CharacterTable
+%  {Upper-case    \A\B\C\D\E\F\G\H\I\J\K\L\M\N\O\P\Q\R\S\T\U\V\W\X\Y\Z
+%   Lower-case    \a\b\c\d\e\f\g\h\i\j\k\l\m\n\o\p\q\r\s\t\u\v\w\x\y\z
+%   Digits        \0\1\2\3\4\5\6\7\8\9
+%   Exclamation   \!     Double quote  \"     Hash (number) \#
+%   Dollar        \$     Percent       \%     Ampersand     \&
+%   Acute accent  \'     Left paren    \(     Right paren   \)
+%   Asterisk      \*     Plus          \+     Comma         \,
+%   Minus         \-     Point         \.     Solidus       \/
+%   Colon         \:     Semicolon     \;     Less than     \<
+%   Equals        \=     Greater than  \>     Question mark \?
+%   Commercial at \@     Left bracket  \[     Backslash     \\
+%   Right bracket \]     Circumflex    \^     Underscore    \_
+%   Grave accent  \`     Left brace    \{     Vertical bar  \|
+%   Right brace   \}     Tilde         \~}
+%
+%
+% \changes{<+version+>}{<+vdate+>}{Converted to DTX file}
+%
+% \DoNotIndex{\newcommand,\newenvironment}
+%
+% \GetFileInfo{<+file+>.dtx}
+% \title{The \textsf{<+file+>} package}
+% \author{<+author+> \\ \url{<+email+>}}
+% \date{\fileversion from \filedate}
+%
+% \maketitle
+%
+% \section{Introduction}
+%
+% Put text here.
+%
+% \section{Usage}
+%
+% Put text here.
+%
+<+USAGE+>
+%
+% \StopEventually{}
+%
+% \section{Implementation}
+%
+<+IMPLEMENTATION+>
+%
+% \Finale
+\endinput
