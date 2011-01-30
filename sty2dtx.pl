@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 ################################################################################
-my $VERSION = substr('$Date: $', 7, 10);
+my $VERSION = substr('$Date$', 7, 10);
 my $TITLE = << "EOT";
   sty2dtx -- Converts a LaTeX .sty file to a documented .dtx file
   Version: $VERSION
