@@ -30,7 +30,7 @@ my $DESCRIPTION = << 'EOT';
   Code lines outside macro definitions are wrapped only in 'macrocode'
   environments. Empty lines are removed.
   The script is not thought to be fool proof and 100% accurate but rather
-  as a good start to convert undocumented style file to .dtx files.
+  as a good start to convert undocumented style files to .dtx files.
 
   Usage:
      perl sty2dtx.pl infile [infile ...] outfile
@@ -99,6 +99,8 @@ Options:
   -e <file>     : Export default .dtx template to file and exit
   -E <file>     : Export default .ins template to file and exit
   -D            : Use current date as file date
+  -F <file>     : Read more options and variables from file.
+                  Should contain one option or variable per line only.
 
 Examples:
   Produce 'file.dtx' from 'file.sty':
@@ -267,7 +269,7 @@ sub option {
     }
     elsif ($opt eq 'e') {
         my $templ = shift @ARGV;
-        if ($templfile ne '-') {
+        if ($templ ne '-') {
             open (STDOUT, '>', $templ) or die "$ERROR Couldn't open new template file '$templ'\n";
         }
         while (<DATA>) {
@@ -311,6 +313,24 @@ sub option {
         print "\n";
         print $COPYRIGHT;
         exit (0);
+    }
+    elsif ($opt eq 'F') {
+        my $optfile = shift @ARGV;
+        # Read more options and variables from file
+        open(my $OPT, '<', $optfile) or die ("Couldn't open options file '$optfile'!\n");
+        while (my $line = <$OPT>) {
+            chomp $line;
+            # Split variable lines without equal sign into name and value
+            if (substr($line, 0, 2) eq '--' and index($line, '=') == -1) {
+                my ($var, $val) = split (/\s+/, $line, 2);
+                $val =~ s/^["']|["']$//g;
+                unshift @ARGV, $var, $val;
+            }
+            else {
+                unshift @ARGV, $line;
+            }
+        }
+        close ($OPT);
     }
     elsif ($opt eq 'D') {
         $vars{date} = "$year/$mon/$mday";
