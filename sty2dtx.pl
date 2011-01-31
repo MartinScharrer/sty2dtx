@@ -58,7 +58,7 @@ my $DESCRIPTION = << 'EOT';
 
 EOT
 ################################################################################
-my $VERSION = substr('$Date$', 7, 10);
+my $VERSION = "v2.0 " . substr('$Date$', 7, 10);
 $VERSION =~ tr/-/\//;
 my $TITLE = << "EOT";
   sty2dtx -- Converts a LaTeX .sty file to a documented .dtx file
@@ -539,7 +539,7 @@ while (<DATA>) {
 if ($verbose) {
     print STDERR "Generated DTX file";
     print STDERR " '$outfile'" if $outfile and $outfile ne '-';
-    print STDERR " with template '$templfile'" if $templfile;
+    print STDERR " using template '$templfile'" if $templfile;
     print STDERR ".\n";
 }
 
@@ -570,7 +570,7 @@ while (<DATA>) {
 
 if ($verbose) {
     print STDERR "Generated INS file '$installfile'";
-    print STDERR " with template '$installtempl'" if $installtempl;
+    print STDERR " using template '$installtempl'" if $installtempl;
     print STDERR ".\n";
 }
 ################################################################################
