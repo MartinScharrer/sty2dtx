@@ -488,7 +488,10 @@ while (<>) {
         }
     }
     # Collect comment lines, might be inserted as macro or environment description
-    elsif (s/^\s*%/%/) {
+    # Real comments are either: 1) starting with a '%' at SOL or 2) are followed
+    # by at least one whitespace. This exclude (most) commented out code.
+    elsif (/^%|^\s*%\s/) {
+        $_ =~ s/^\s*//;
         $comments .= $_;
         if ($mode == 1) {
             $IMPL .= $macrocodestop;
