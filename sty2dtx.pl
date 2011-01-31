@@ -132,12 +132,12 @@ my $ERROR = "sty2dtx: Error:";
 # Used as format string of printf so that the '%' must be doubled:
 my $macrostart = <<'EOT';
 %% \begin{macro}{\%s}
-%%    \begin{macrocode}
+%s%%    \begin{macrocode}
 EOT
 
 my $environmentstart = <<'EOT';
 %% \begin{environment}{%s}
-%%    \begin{macrocode}
+%s%%    \begin{macrocode}
 EOT
 
 my $macrodescription = <<'EOT';
@@ -230,6 +230,7 @@ $mon = sprintf("%02d", $mon + 1);
 $year += 1900;
 
 my @files;
+my $comments;
 my $outfile = '';
 my $verbose = 0;
 my $install = 0;
@@ -429,9 +430,10 @@ while (<>) {
         close_env();
 
         # Print 'macro' environment with current line.
-        $IMPL .= sprintf( $macrostart, $name );
+        $IMPL .= sprintf( $macrostart, $name, $comments );
         addtochecksum($_);
         $IMPL .= $_;
+        $comments = '';
 
         # Inside macro mode
         $mode = 1;
@@ -460,9 +462,10 @@ while (<>) {
         close_env();
 
         # Print 'environment' environment with current line.
-        $IMPL .= sprintf( $environmentstart, $name );
+        $IMPL .= sprintf( $environmentstart, $name, $comments );
         addtochecksum($_);
         $IMPL .= $_;
+        $comments = '';
 
         # Inside environment mode
         $mode = 3;
@@ -488,6 +491,9 @@ while (<>) {
         $IMPL .= $_ . $environmentstop;
         $mode = 0;
     }
+    elsif (/^%/) {
+        $comments .= $_;
+    }
     # Remove empty lines (mostly between macros)
     elsif (/^$/) {
     }
@@ -499,9 +505,10 @@ while (<>) {
         }
         else {
             # Start macrocode environment
-            $IMPL .= $macrocodestart . $_;
+            $IMPL .= $comments . $macrocodestart . $_;
             addtochecksum($_);
             $mode = 2;
+            $comments = '';
         }
     }
 }
