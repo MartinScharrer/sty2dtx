@@ -542,14 +542,6 @@ $vars{maintainer} = $vars{author}
 
 ################################################################################
 # Write DTX file
-$vars{IMPLEMENTATION} = $IMPL;
-$vars{USAGE}          = $USAGE;
-$vars{type}           = "\L$vars{type}";
-$vars{Type}           = "\L\u$vars{type}";
-$vars{extension}      = $vars{type} eq 'class' ? 'cls' : 'sty';
-$vars{maintainer}     = $vars{author}
-    if not exists $vars{maintainer} and exists $vars{author};
-
 if ($codeonly) {
     print $IMPL;
     if ($verbose) {
@@ -618,6 +610,9 @@ if ($verbose) {
 # The '<+var+>' format was choosen because it is used by the latex suite for Vim.
 # Therfore all variables which are not expanded are easily accessible to the
 # user using a certain feature in the latex suite.
+#
+# Perl modules like 'Template' were not used to support minimal Perl installation
+# for typical LaTeX installations.
 #
 __DATA__
 % \iffalse meta-comment
