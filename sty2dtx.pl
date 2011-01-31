@@ -58,7 +58,7 @@ my $DESCRIPTION = << 'EOT';
 
 EOT
 ################################################################################
-my $VERSION = "v2.0 " . substr('$Date$', 7, 10);
+my $VERSION = "v2.1 " . substr('$Date$', 7, 10);
 $VERSION =~ tr/-/\//;
 my $TITLE = << "EOT";
   sty2dtx -- Converts a LaTeX .sty file to a documented .dtx file
@@ -485,19 +485,6 @@ while (<>) {
             $mode = 0;
         }
     }
-    # A single '}' on a line ends a 'macro' environment in macro mode
-    elsif ($mode == 2 && /^}\s*$/) {
-        addtochecksum($_);
-        $IMPL .= $_ . $macrostop;
-        $mode = 0;
-    }
-    # A single '}' on a line ends a 'environment' environment in environment
-    # mode
-    elsif ($mode == 3 && /^}\s*$/) {
-        addtochecksum($_);
-        $IMPL .= $_ . $environmentstop;
-        $mode = 0;
-    }
     # Collect comment lines, might be inserted as macro or environment description
     elsif (s/^\s*%/%/) {
         $comments .= $_;
@@ -508,11 +495,14 @@ while (<>) {
     }
     # Remove empty lines (mostly between macros)
     elsif (/^$/) {
-        # Flush collected outside comments
-        $IMPL .= $comments;
-        $comments = '';
+        if ($comments) {
+            # Flush collected outside comments
+            $IMPL .= $comments . "%\n";
+            $comments = '';
+        }
     }
     else {
+        addtochecksum($_);
         # If inside an environment
         if ($mode) {
             if ($comments) {
@@ -520,12 +510,15 @@ while (<>) {
                 $comments = '';
             }
             $IMPL .= $_;
-            addtochecksum($_);
+            # A single '}' on a line ends a 'macro' or 'environment' environment
+            if ($mode > 1 && /^\}\s*$/) {
+                $IMPL .= ($mode == 2) ? $macrostop : $environmentstop;
+                $mode = 0;
+            }
         }
         else {
             # Start macrocode environment
             $IMPL .= $comments . $macrocodestart . $_;
-            addtochecksum($_);
             $mode = 1;
             $comments = '';
         }
