@@ -93,6 +93,7 @@ Options:
   -O            : Overwrite already existing output file(s)
   -B            : Use basename of single input file for output file
   -I            : Also create .ins (install) file
+  -c            : Only use code section (like v1.0)
   -i <ins file> : Create .ins file with given name
   -t <template> : Use this file as template instead of the default one
   -T <template> : Use this file as template for the .ins file
@@ -131,11 +132,13 @@ my $ERROR = "sty2dtx: Error:";
 
 # Used as format string of printf so that the '%' must be doubled:
 my $macrostart = <<'EOT';
+%%
 %% \begin{macro}{\%s}
 %s%%    \begin{macrocode}
 EOT
 
 my $environmentstart = <<'EOT';
+%%
 %% \begin{environment}{%s}
 %s%%    \begin{macrocode}
 EOT
@@ -171,7 +174,6 @@ EOT
 
 my $macrocodestop = <<'EOT';
 %    \end{macrocode}
-%
 EOT
 
 my $USAGE = '';  # Store macro names for usage section
@@ -211,9 +213,10 @@ my $renvdef = qr/
      (.*)                                                    # Rest of line
     /xms;
 
+my $comments = '';
 
 # Print end of environment, if one is open
-sub close_env {
+sub close_environment {
     if ( $mode == 1 ) {
         $IMPL .= $macrocodestop;
     }
@@ -231,9 +234,9 @@ $mon = sprintf("%02d", $mon + 1);
 $year += 1900;
 
 my @files;
-my $comments;
 my $outfile = '';
 my $verbose = 0;
+my $codeonly = 0;
 my $install = 0;
 my $usebase = 0;
 my $overwrite = 0;
@@ -260,6 +263,9 @@ sub option {
         print "\n";
         print $DESCRIPTION;
         exit (0);
+    }
+    elsif ($opt eq 'c') {
+        $codeonly = 1;
     }
     elsif ($opt eq 'B') {
         $usebase = 1;
@@ -428,7 +434,7 @@ while (<>) {
             $USAGE .= sprintf ($macrodescription, $name);
         }
 
-        close_env();
+        close_environment();
 
         # Print 'macro' environment with current line.
         $IMPL .= sprintf( $macrostart, $name, $comments );
@@ -460,7 +466,7 @@ while (<>) {
             $USAGE .= sprintf ($envdescription, $name);
         }
 
-        close_env();
+        close_environment();
 
         # Print 'environment' environment with current line.
         $IMPL .= sprintf( $environmentstart, $name, $comments );
@@ -485,27 +491,36 @@ while (<>) {
         $IMPL .= $_ . $macrostop;
         $mode = 0;
     }
-    # A single '}' on a line ends a 'environemnt' environment in environment
+    # A single '}' on a line ends a 'environment' environment in environment
     # mode
     elsif ($mode == 3 && /^}\s*$/) {
         addtochecksum($_);
         $IMPL .= $_ . $environmentstop;
         $mode = 0;
     }
-    elsif (/^%/) {
+    # Collect comment lines, might be inserted as macro or environment description
+    elsif (s/^\s*%/%/) {
         $comments .= $_;
+        if ($mode == 1) {
+            $IMPL .= $macrocodestop;
+            $mode = 0;
+        }
     }
     # Remove empty lines (mostly between macros)
-    # Flushes collected comments
     elsif (/^$/) {
+        # Flush collected outside comments
         $IMPL .= $comments;
         $comments = '';
     }
     else {
         # If inside an environment
         if ($mode) {
-            addtochecksum($_);
+            if ($comments) {
+                $IMPL .= $macrocodestop . $comments . $macrocodestart;
+                $comments = '';
+            }
             $IMPL .= $_;
+            addtochecksum($_);
         }
         else {
             # Start macrocode environment
@@ -517,7 +532,7 @@ while (<>) {
     }
 }
 
-close_env();
+close_environment();
 
 ################################################################################
 # Set extra/auto variables
@@ -540,18 +555,28 @@ $vars{extension}      = $vars{type} eq 'class' ? 'cls' : 'sty';
 $vars{maintainer}     = $vars{author}
     if not exists $vars{maintainer} and exists $vars{author};
 
-while (<DATA>) {
-    last if /^__INS__$/;
-    # Substitute template variables
-    s/<\+([^+]+)\+>\n?/exists $vars{$1} ? $vars{$1} : "<+$1+>"/eg;
-    print;
+if ($codeonly) {
+    print $IMPL;
+    if ($verbose) {
+        print STDERR "Generated DTX file";
+        print STDERR " '$outfile'" if $outfile and $outfile ne '-';
+        print STDERR " (code only).\n";
+    }
 }
+else {
+    while (<DATA>) {
+        last if /^__INS__$/;
+        # Substitute template variables
+        s/<\+([^+]+)\+>\n?/exists $vars{$1} ? $vars{$1} : "<+$1+>"/eg;
+        print;
+    }
 
-if ($verbose) {
-    print STDERR "Generated DTX file";
-    print STDERR " '$outfile'" if $outfile and $outfile ne '-';
-    print STDERR " using template '$templfile'" if $templfile;
-    print STDERR ".\n";
+    if ($verbose) {
+        print STDERR "Generated DTX file";
+        print STDERR " '$outfile'" if $outfile and $outfile ne '-';
+        print STDERR " using template '$templfile'" if $templfile;
+        print STDERR ".\n";
+    }
 }
 
 ################################################################################
@@ -567,6 +592,13 @@ if ( ( !$outfile || $outfile eq '-' ) && !$installfile) {
 if ($installtempl) {
     open (DATA, '<', $installtempl) or die "$ERROR Could't open template '$installtempl' for .ins file.";
 }
+elsif ($codeonly) {
+    # If DATA template was not used for main file go forward to correct position
+    while (<DATA>) {
+        last if /^__INS__$/;
+    }
+}
+
 $installfile = $vars{filebase} . '.ins' unless defined $installfile;
 if (!$overwrite && -e $installfile && $installfile ne '/dev/null') {
     die ("$ERROR Output file '$installfile' does already exists! Use the -O option to overwrite.\n");
