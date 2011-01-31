@@ -328,6 +328,8 @@ sub option {
         open(my $OPT, '<', $optfile) or die ("Couldn't open options file '$optfile'!\n");
         while (my $line = <$OPT>) {
             chomp $line;
+            # Skip comment lines
+            next if $line =~ /^\s*[#%]/;
             # Split variable lines without equal sign into name and value
             if (substr($line, 0, 2) eq '--' and index($line, '=') == -1) {
                 my ($var, $val) = split (/\s+/, $line, 2);
