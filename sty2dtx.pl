@@ -495,7 +495,10 @@ while (<>) {
         $comments .= $_;
     }
     # Remove empty lines (mostly between macros)
+    # Flushes collected comments
     elsif (/^$/) {
+        $IMPL .= $comments;
+        $comments = '';
     }
     else {
         # If inside an environment
