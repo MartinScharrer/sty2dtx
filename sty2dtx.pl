@@ -179,8 +179,9 @@ my $IMPL  = '';   # Store implementation section
 
 my $mode = 0;
 # 0 = outside of macro or macrocode environments
-# 1 = inside macro environment
-# 2 = inside macrocode environment
+# 1 = inside 'macrocode' environment
+# 2 = inside 'macro' environment
+# 3 = inside 'environment' environment
 
 # RegExs for macro names and defintion:
 my $rmacroname = qr/[a-zA-Z\@:]+/;    # Add ':' for LaTeX3 style macros
@@ -214,11 +215,11 @@ my $renvdef = qr/
 # Print end of environment, if one is open
 sub close_env {
     if ( $mode == 1 ) {
-        # Happens only if closing brace is not on a line by its own.
-        $IMPL .= $macrostop;
+        $IMPL .= $macrocodestop;
     }
     elsif ( $mode == 2 ) {
-        $IMPL .= $macrocodestop;
+        # Happens only if closing brace is not on a line by its own.
+        $IMPL .= $macrostop;
     }
     elsif ( $mode == 3 ) {
         $IMPL .= $environmentstop;
@@ -436,7 +437,7 @@ while (<>) {
         $comments = '';
 
         # Inside macro mode
-        $mode = 1;
+        $mode = 2;
 
         # Test for one line definitions.
         # $pre is tested to handle '{\somecatcodechange\gdef\name{short}}' lines
@@ -479,7 +480,7 @@ while (<>) {
         }
     }
     # A single '}' on a line ends a 'macro' environment in macro mode
-    elsif ($mode == 1 && /^}\s*$/) {
+    elsif ($mode == 2 && /^}\s*$/) {
         addtochecksum($_);
         $IMPL .= $_ . $macrostop;
         $mode = 0;
@@ -510,7 +511,7 @@ while (<>) {
             # Start macrocode environment
             $IMPL .= $comments . $macrocodestart . $_;
             addtochecksum($_);
-            $mode = 2;
+            $mode = 1;
             $comments = '';
         }
     }
