@@ -58,7 +58,7 @@ my $DESCRIPTION = << 'EOT';
 
 EOT
 ################################################################################
-my $VERSION = "v2.1 " . substr('$Date$', 7, 10);
+my $VERSION = "v2.1 " . substr( '$Date$', 7, 10 );
 $VERSION =~ tr/-/\//;
 my $TITLE = << "EOT";
   sty2dtx -- Converts a LaTeX .sty file to a documented .dtx file
@@ -125,7 +125,7 @@ Examples:
     sty2dtx.pl --type class mycls.sty mycls.dtx
 
 EOT
-    exit (0);
+    exit(0);
 }
 
 my $ERROR = "sty2dtx: Error:";
@@ -176,8 +176,8 @@ my $macrocodestop = <<'EOT';
 %    \end{macrocode}
 EOT
 
-my $USAGE = '';  # Store macro names for usage section
-my $IMPL  = '';   # Store implementation section
+my $USAGE = '';    # Store macro names for usage section
+my $IMPL  = '';    # Store implementation section
 
 my $mode = 0;
 # 0 = outside of macro or macrocode environments
@@ -188,7 +188,7 @@ my $mode = 0;
 # RegExs for macro names and defintion:
 my $rmacroname = qr/[a-zA-Z\@:]+/;    # Add ':' for LaTeX3 style macros
 my $rusermacro = qr/[a-zA-Z]+/;       # Macros intended for users
-my $rmacrodef = qr/
+my $rmacrodef  = qr/
     ^                                                        # Begin of line (no whitespaces!)
      (
        (?:(?:\\global|\\long|\\protected|\\outer)\s*)*       # Prefixes (maybe with whitespace between them)
@@ -229,16 +229,16 @@ sub close_environment {
     }
 }
 
-my ($mday,$mon,$year) = (localtime(time))[3..5];
-$mon = sprintf("%02d", $mon + 1);
+my ( $mday, $mon, $year ) = ( localtime(time) )[ 3 .. 5 ];
+$mon = sprintf( "%02d", $mon + 1 );
 $year += 1900;
 
 my @files;
-my $outfile = '';
-my $verbose = 0;
-my $codeonly = 0;
-my $install = 0;
-my $usebase = 0;
+my $outfile   = '';
+my $verbose   = 0;
+my $codeonly  = 0;
+my $install   = 0;
+my $usebase   = 0;
 my $overwrite = 0;
 my $installfile;
 my $templfile;
@@ -255,43 +255,47 @@ my %vars = (
 # Handle options
 sub option {
     my $opt = shift;
-    if ($opt eq 'h') {
+    if ( $opt eq 'h' ) {
         usage();
     }
-    elsif ($opt eq 'H') {
+    elsif ( $opt eq 'H' ) {
         print $TITLE;
         print "\n";
         print $DESCRIPTION;
-        exit (0);
+        exit(0);
     }
-    elsif ($opt eq 'c') {
+    elsif ( $opt eq 'c' ) {
         $codeonly = 1;
     }
-    elsif ($opt eq 'B') {
+    elsif ( $opt eq 'B' ) {
         $usebase = 1;
     }
-    elsif ($opt eq 't') {
-        close (DATA);
+    elsif ( $opt eq 't' ) {
+        close(DATA);
         $templfile = shift @ARGV;
-        open (DATA, '<', $templfile) or die "$ERROR Couldn't open template file '$templfile'\n";
+        open( DATA, '<', $templfile )
+          or die "$ERROR Couldn't open template file '$templfile'\n";
     }
-    elsif ($opt eq 'e') {
+    elsif ( $opt eq 'e' ) {
         my $templ = shift @ARGV;
-        if ($templ ne '-') {
-            open (STDOUT, '>', $templ) or die "$ERROR Couldn't open new template file '$templ'\n";
+        if ( $templ ne '-' ) {
+            open( STDOUT, '>', $templ )
+              or die "$ERROR Couldn't open new template file '$templ'\n";
         }
         while (<DATA>) {
             last if /^__INS__$/;
             print;
         }
-        print STDERR "Exported default template for .dtx files to file '$templ'\n"
-            if $verbose;
-        exit (0);
+        print STDERR
+          "Exported default template for .dtx files to file '$templ'\n"
+          if $verbose;
+        exit(0);
     }
-    elsif ($opt eq 'E') {
+    elsif ( $opt eq 'E' ) {
         my $templ = shift @ARGV;
-        if ($templ ne '-') {
-            open (STDOUT, '>', $templ) or die "$ERROR Couldn't open new template file '$templ'\n";
+        if ( $templ ne '-' ) {
+            open( STDOUT, '>', $templ )
+              or die "$ERROR Couldn't open new template file '$templ'\n";
         }
         while (<DATA>) {
             last if /^__INS__$/;
@@ -299,40 +303,45 @@ sub option {
         while (<DATA>) {
             print;
         }
-        print STDERR "Exported default template for .ins files to file '$templ'\n"
-            if $verbose;
-        exit (0);
+        print STDERR
+          "Exported default template for .ins files to file '$templ'\n"
+          if $verbose;
+        exit(0);
     }
-    elsif ($opt eq 'v') {
-        $verbose ++;
+    elsif ( $opt eq 'v' ) {
+        $verbose++;
     }
-    elsif ($opt eq 'I') {
+    elsif ( $opt eq 'I' ) {
         $install = 1;
     }
-    elsif ($opt eq 'i') {
+    elsif ( $opt eq 'i' ) {
         $installfile = shift @ARGV;
-        $install = 1;
+        $install     = 1;
     }
-    elsif ($opt eq 'T') {
+    elsif ( $opt eq 'T' ) {
         $installtempl = shift @ARGV;
     }
-    elsif ($opt eq 'V') {
+    elsif ( $opt eq 'V' ) {
         print $TITLE;
         print "\n";
         print $COPYRIGHT;
-        exit (0);
+        exit(0);
     }
-    elsif ($opt eq 'F') {
+    elsif ( $opt eq 'F' ) {
         my $optfile = shift @ARGV;
+
         # Read more options and variables from file
-        open(my $OPT, '<', $optfile) or die ("Couldn't open options file '$optfile'!\n");
-        while (my $line = <$OPT>) {
+        open( my $OPT, '<', $optfile )
+          or die("Couldn't open options file '$optfile'!\n");
+        while ( my $line = <$OPT> ) {
             chomp $line;
+
             # Skip comment lines
             next if $line =~ /^\s*[#%]/;
+
             # Split variable lines without equal sign into name and value
-            if (substr($line, 0, 2) eq '--' and index($line, '=') == -1) {
-                my ($var, $val) = split (/\s+/, $line, 2);
+            if ( substr( $line, 0, 2 ) eq '--' and index( $line, '=' ) == -1 ) {
+                my ( $var, $val ) = split( /\s+/, $line, 2 );
                 $val =~ s/^["']|["']$//g;
                 unshift @ARGV, $var, $val;
             }
@@ -340,20 +349,20 @@ sub option {
                 unshift @ARGV, $line;
             }
         }
-        close ($OPT);
+        close($OPT);
     }
-    elsif ($opt eq 'D') {
+    elsif ( $opt eq 'D' ) {
         $vars{date} = "$year/$mon/$mday";
     }
-    elsif ($opt eq 'o') {
+    elsif ( $opt eq 'o' ) {
         $outfile = shift @ARGV;
     }
-    elsif ($opt eq 'O') {
+    elsif ( $opt eq 'O' ) {
         $overwrite = 1;
     }
     else {
         print STDERR "sty2dtx: unknown option '-$opt'!\n";
-        exit (2);
+        exit(2);
     }
 }
 
@@ -367,18 +376,21 @@ sub addtochecksum {
 # Parse arguments
 while (@ARGV) {
     my $arg = shift;
+
     # '--' Marks rest of arguments as files
-    if ($arg eq '--' ) {
+    if ( $arg eq '--' ) {
         push @files, @ARGV;
         last;
     }
+
     # Options and variables
-    elsif ($arg =~ /^(-+)(.+)$/ ) {
+    elsif ( $arg =~ /^(-+)(.+)$/ ) {
         my $dashes = $1;
         my $name   = $2;
+
         # Single dash => option
-        if (length($dashes) == 1) {
-            foreach my $opt (split //, $name) {
+        if ( length($dashes) == 1 ) {
+            foreach my $opt ( split //, $name ) {
                 option($opt);
             }
         }
@@ -389,7 +401,7 @@ while (@ARGV) {
         }
         # Form "--var value"
         else {
-            $vars{lc($name)} = shift;
+            $vars{ lc($name) } = shift;
         }
     }
     # Files
@@ -400,22 +412,26 @@ while (@ARGV) {
 
 
 # Last (but not only) argument is output file, except if it is '-' (=STDOUT)
-if ($outfile || @files > 1) {
+if ( $outfile || @files > 1 ) {
     $outfile = pop @files unless $outfile;
-    $vars{filebase} = substr($outfile, 0, rindex($outfile, '.')) if not exists $vars{filebase};
+    $vars{filebase} = substr( $outfile, 0, rindex( $outfile, '.' ) )
+      if not exists $vars{filebase};
 }
-elsif (@files == 1) {
+elsif ( @files == 1 ) {
     my $infile = $files[0];
-    $vars{filebase} = substr($infile, 0, rindex($infile, '.')) if not exists $vars{filebase};
+    $vars{filebase} = substr( $infile, 0, rindex( $infile, '.' ) )
+      if not exists $vars{filebase};
     if ($usebase) {
         $outfile = $vars{filebase} . '.dtx';
     }
 }
-if ($outfile && $outfile ne '-') {
-    if (!$overwrite && -e $outfile && $outfile ne '/dev/null') {
-        die ("$ERROR output file '$outfile' does already exists! Use the -O option to overwrite.\n");
+if ( $outfile && $outfile ne '-' ) {
+    if ( !$overwrite && -e $outfile && $outfile ne '/dev/null' ) {
+        die(    "$ERROR output file '$outfile' does already exists!"
+              . " Use the -O option to overwrite.\n" );
     }
-    open (OUTPUT, '>', $outfile) or die ("$ERROR Could not open output file '$outfile'!");
+    open( OUTPUT, '>', $outfile )
+      or die("$ERROR Could not open output file '$outfile'!");
     select OUTPUT;
 }
 
@@ -432,8 +448,8 @@ while (<>) {
         my $rest = $4;          # rest of line
 
         # Add to usage section if it is a user level macro
-        if ($name =~ /^$rusermacro$/i) {
-            $USAGE .= sprintf ($macrodescription, $name);
+        if ( $name =~ /^$rusermacro$/i ) {
+            $USAGE .= sprintf( $macrodescription, $name );
         }
 
         close_environment();
@@ -458,14 +474,14 @@ while (<>) {
     }
     # Test for environment definition command
     elsif (/$renvdef/) {
-        my $cmd  = $1;          # definition command
-        my $name = $2;          # macro name
-        my $rest = $3;          # rest of line
+        my $cmd  = $1;    # definition command
+        my $name = $2;    # macro name
+        my $rest = $3;    # rest of line
 
         # Add to usage section if it is a user level environment
         # Can use the same RegEx as for macro names
-        if ($name =~ /^$rusermacro$/i) {
-            $USAGE .= sprintf ($envdescription, $name);
+        if ( $name =~ /^$rusermacro$/i ) {
+            $USAGE .= sprintf( $envdescription, $name );
         }
 
         close_environment();
@@ -480,8 +496,8 @@ while (<>) {
         $mode = 3;
 
         # Test for one line definitions.
-        my $nopen  = ($rest =~ tr/{/{/);
-        if ( $nopen >= 2 && $nopen == ($rest =~ tr/}/}/) ) {
+        my $nopen = ( $rest =~ tr/{/{/ );
+        if ( $nopen >= 2 && $nopen == ( $rest =~ tr/}/}/ ) ) {
             $IMPL .= $environmentstop;
             # Outside mode
             $mode = 0;
@@ -493,7 +509,7 @@ while (<>) {
     elsif (/^%|^\s*%\s/) {
         $_ =~ s/^\s*//;
         $comments .= $_;
-        if ($mode == 1) {
+        if ( $mode == 1 ) {
             $IMPL .= $macrocodestop;
             $mode = 0;
         }
@@ -516,15 +532,15 @@ while (<>) {
             }
             $IMPL .= $_;
             # A single '}' on a line ends a 'macro' or 'environment' environment
-            if ($mode > 1 && /^\}\s*$/) {
-                $IMPL .= ($mode == 2) ? $macrostop : $environmentstop;
+            if ( $mode > 1 && /^\}\s*$/ ) {
+                $IMPL .= ( $mode == 2 ) ? $macrostop : $environmentstop;
                 $mode = 0;
             }
         }
         else {
             # Start macrocode environment
             $IMPL .= $comments . $macrocodestart . $_;
-            $mode = 1;
+            $mode     = 1;
             $comments = '';
         }
     }
@@ -541,7 +557,7 @@ $vars{Type}       = "\L\u$vars{type}";
 $vars{extension}  = $vars{type} eq 'class' ? 'cls' : 'sty';
 $vars{checksum}   = $checksum if not exists $vars{checksum}; # Allow user to overwrite
 $vars{maintainer} = $vars{author}
-    if not exists $vars{maintainer} and exists $vars{author};
+  if not exists $vars{maintainer} and exists $vars{author};
 
 ################################################################################
 # Write DTX file
@@ -573,14 +589,16 @@ else {
 # Write INS file if requested
 exit(0) unless $install;
 
-if ( ( !$outfile || $outfile eq '-' ) && !$installfile) {
-    print STDERR "Warning: Did not generate requested .ins file because main file\n";
+if ( ( !$outfile || $outfile eq '-' ) && !$installfile ) {
+    print STDERR
+      "Warning: Did not generate requested .ins file because main file\n";
     print STDERR "         was written to STDOUT and no -i option was given.\n";
     exit(1);
 }
 
 if ($installtempl) {
-    open (DATA, '<', $installtempl) or die "$ERROR Could't open template '$installtempl' for .ins file.";
+    open( DATA, '<', $installtempl )
+      or die "$ERROR Could't open template '$installtempl' for .ins file.";
 }
 elsif ($codeonly) {
     # If DATA template was not used for main file go forward to correct position
@@ -590,10 +608,12 @@ elsif ($codeonly) {
 }
 
 $installfile = $vars{filebase} . '.ins' unless defined $installfile;
-if (!$overwrite && -e $installfile && $installfile ne '/dev/null') {
-    die ("$ERROR Output file '$installfile' does already exists! Use the -O option to overwrite.\n");
+if ( !$overwrite && -e $installfile && $installfile ne '/dev/null' ) {
+    die(    "$ERROR Output file '$installfile' does already exists!"
+          . " Use the -O option to overwrite.\n" );
 }
-open (INS, '>', $installfile) or die "$ERROR Could't open new .ins file '$installfile'.";
+open( INS, '>', $installfile )
+  or die "$ERROR Could't open new .ins file '$installfile'.";
 
 while (<DATA>) {
     # Substitute template variables
