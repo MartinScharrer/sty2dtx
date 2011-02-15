@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
+use File::Basename qw(dirname);
 ################################################################################
 # $Id$
 ################################################################################
@@ -102,6 +103,7 @@ Options:
   -D            : Use current date as file date
   -F <file>     : Read more options and variables from file.
                   Should contain one option or variable per line only.
+  -N            : Do not read default config file(s). Must be the very first option to work.
 
 Examples:
   Produce 'file.dtx' from 'file.sty':
@@ -244,6 +246,7 @@ my $installfile;
 my $templfile;
 my $installtempl;
 my $checksum = 0;
+my $config_file;
 
 # Holds the variables for the templates, is initiated with default values:
 my %vars = (
@@ -327,6 +330,10 @@ sub option {
         print $COPYRIGHT;
         exit(0);
     }
+    elsif ( $opt eq 'N' ) {
+        print STDERR "sty2dtx warning: '-N' option used after default config file was already loaded.\n"
+            if $config_file && $verbose;
+    }
     elsif ( $opt eq 'F' ) {
         my $optfile = shift @ARGV;
 
@@ -373,6 +380,36 @@ sub addtochecksum {
 }
 
 ################################################################################
+
+my $CONFIG_NAME = "sty2dtx.cfg";
+
+if (!@ARGV || $ARGV[0] !~ /^-[^-]*N/) {
+
+PATH:
+foreach my $path ('.', $ENV{HOME}, dirname($0)) {
+    foreach my $file ($path.'/'.$CONFIG_NAME, $path.'/.'.$CONFIG_NAME) {
+        if (-e $file) {
+            $config_file = $file;
+            last PATH;
+        }
+    }
+}
+if (!$config_file) {
+    # Find the config file in the TeX tree.
+    if (open (my $pipe, '-|', "kpsewhich -must-exist $CONFIG_NAME")) {
+        $config_file = <$pipe>;
+        close $pipe;
+    }
+}
+if ($config_file) {
+    chomp $config_file;
+    print STDERR "sty2dtx info: loading config file '$config_file'.\n"
+        if ($verbose);
+    unshift @ARGV, '-F', $config_file;
+}
+
+}
+
 # Parse arguments
 while (@ARGV) {
     my $arg = shift;
