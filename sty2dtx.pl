@@ -5,7 +5,17 @@ use File::Basename qw(dirname);
 ################################################################################
 # $Id$
 ################################################################################
-my $COPYRIGHT = << 'EOT';
+
+=head1 NAME
+
+  sty2dtx -- Converts a LaTeX .sty file to a documented .dtx file
+
+  $Revision$
+  $Date$
+
+
+=head1 COPYRIGHT
+
   Copyright (c) 2010-2011 Martin Scharrer <martin@scharrer-online.de>
 
   This program is free software: you can redistribute it and/or modify
@@ -21,9 +31,9 @@ my $COPYRIGHT = << 'EOT';
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-EOT
-################################################################################
-my $DESCRIPTION = << 'EOT';
+
+=head1 DESCRIPTION
+
   Converts a .sty file (LaTeX package) to .dtx format (documented LaTeX source),
   by surrounding macro definitions with 'macro' and 'macrocode' environments.
   The macro name is automatically inserted as an argument to the 'macro'
@@ -33,11 +43,14 @@ my $DESCRIPTION = << 'EOT';
   The script is not thought to be fool proof and 100% accurate but rather
   as a good start to convert undocumented style files to .dtx files.
 
-  Usage:
+
+=head2 Basic Usage
+
      perl sty2dtx.pl infile [infile ...] outfile
   or
      perl sty2dtx.pl < file.sty > file.dtx
 
+=head2 Supported Definitions
 
   The following macro definitions are detected when they are at the start of a
   line (can be prefixed by \global, \long, \protected and/or \outer):
@@ -57,62 +70,104 @@ my $DESCRIPTION = << 'EOT';
   The macro and environment definition must either end at the same line or with
   a '}' on its own on a line.
 
-EOT
-################################################################################
-my $VERSION = "v2.1 " . substr( '$Date$', 7, 10 );
-$VERSION =~ tr/-/\//;
-my $TITLE = << "EOT";
-  sty2dtx -- Converts a LaTeX .sty file to a documented .dtx file
-  Version: $VERSION
-EOT
 
-sub usage {
-    print << "EOT";
-sty2dtx.pl [<options>] [--<VAR>=<VALUE> ...] [--] [<infile> ...] [<outfile>]
-Version: $VERSION
-EOT
-    print << 'EOT';
-Files:
-  * can be '-' for STDIN or STDOUT, which is the default if no files are given
-  * multiple input files are merged to one output file
+=head1 USAGE
 
-Variables:
+sty2dtx [<options>] [--<VAR>=<VALUE> ...] [--] [<infile(s)>] [<outfile>]
+
+=head2 Files
+
+=over 2
+
+=item *
+  can be '-' for STDIN or STDOUT, which is the default if no files are given
+
+=item *
+  multiple input files are merged to one output file
+
+=back
+
+=head2 Variables
+
   can be defined using --<VAR>=<VALUE> or --<VAR> <VALUE> and will be used for
   substitutions in the template file.
+
   Common variables:
       author, email, maintainer, year (for copyright),
       version, date, description (of package/class),
       type (either 'package' default or 'class'),
       filebase (automatically set from output or input file name),
 
-Options:
-  -h            : Print this help text
-  -H            : Print extended help
-  -V            : Print version and copyright
-  -v            : Be verbose
-  -o <output>   : Use given file as output
-  -O            : Overwrite already existing output file(s)
-  -B            : Use basename of single input file for output file
-  -I            : Also create .ins (install) file
-  -c            : Only use code section (like v1.0)
-  -i <ins file> : Create .ins file with given name
-  -t <template> : Use this file as template instead of the default one
-  -T <template> : Use this file as template for the .ins file
-  -e <file>     : Export default .dtx template to file and exit
-  -E <file>     : Export default .ins template to file and exit
-  -D            : Use current date as file date
-  -F <file>     : Read more options and variables from file.
-                  Should contain one option or variable per line only.
-  -N            : Do not read default config file(s). Must be the very first option to work.
 
-Config files:
+=head2 Options
+
+=over 8
+
+=item B<-h> S<          >
+ Print this help text
+
+=item B<-H> S<          >
+ Print extended help
+
+=item B<-V> S<          >
+ Print version and copyright
+
+=item B<-v> S<          >
+  Be verbose
+
+=item B<-o> F<output> S<   >
+  Use given file as output
+
+=item B<-O> S<          >
+  Overwrite already existing output file(s)
+
+=item B<-B> S<          >
+  Use basename of single input file for output file
+
+=item B<-I> S<          >
+  Also create .ins (install) file
+
+=item B<-c> S<          >
+  Only use code section (like v1.0)
+
+=item B<-i> F<ins-file> S< >
+  Create .ins file with given name
+
+=item B<-t> F<template> S< >
+  Use this file as template instead of the default one
+
+=item B<-T> F<template> S< >
+  Use this file as template for the .ins file
+
+=item B<-e> F<file> S<     >
+  Export default .dtx template to file and exit
+
+=item B<-E> F<file> S<     >
+  Export default .ins template to file and exit
+
+=item B<-D> S<          >
+  Use current date as file date
+
+=item B<-F> F<file> S<     >
+  Read more options and variables from file.
+
+=item B<-N> S<          >
+  Do not read default config file; must be the first option
+
+=back
+
+
+=head2 Config files
+
   A default config file either named 'sty2dtx.cfg' or '.sty2dtx.cfg' is searched in
   the current directory, the users home directory and the directory of this script
   as well as in the 'texmf' tree, in this order. The first one found is loaded.
   As with -F files the config file should contain one option or variable per line.
-  Lines starting with '%' or '#' are ignored.
+  Lines starting with 'C<%>' or 'C<#>' are ignored.
 
-Examples:
+
+=head2 Examples
+
   Produce 'file.dtx' from 'file.sty':
     sty2dtx.pl < file.sty > file.dtx
    or
@@ -133,8 +188,30 @@ Examples:
   Produce DTX file for a class:
     sty2dtx.pl --type class mycls.sty mycls.dtx
 
+=head1 AUTHOR
+
+Martin Scharrer 
+
+E-mail: L<martin@scharrer-online.de>
+
+WWW: L<http://www.scharrer-online.de/>
+
+=cut
+
+################################################################################
+use Pod::Usage;
+
+my $VERSION = "v2.1 " . substr( '$Date$', 7, 10 );
+$VERSION =~ tr/-/\//;
+
+my $TITLE = << "EOT";
+  sty2dtx -- Converts a LaTeX .sty file to a documented .dtx file
+  Version: $VERSION
 EOT
-    exit(0);
+
+sub usage {
+    print "Version: $VERSION\n\n";
+    pod2usage(-message => $TITLE, -sections => 'USAGE', -verbose=>99 );
 }
 
 my $ERROR = "sty2dtx: Error:";
@@ -269,10 +346,7 @@ sub option {
         usage();
     }
     elsif ( $opt eq 'H' ) {
-        print $TITLE;
-        print "\n";
-        print $DESCRIPTION;
-        exit(0);
+        pod2usage(-message => $TITLE, -sections => 'DESCRIPTION', -verbose=>99 );
     }
     elsif ( $opt eq 'c' ) {
         $codeonly = 1;
@@ -332,10 +406,7 @@ sub option {
         $installtempl = shift @ARGV;
     }
     elsif ( $opt eq 'V' ) {
-        print $TITLE;
-        print "\n";
-        print $COPYRIGHT;
-        exit(0);
+        pod2usage(-message => $TITLE, -sections => 'COPYRIGHT', -verbose=>99 );
     }
     elsif ( $opt eq 'N' ) {
         print STDERR "sty2dtx warning: '-N' option used after default config file was already loaded.\n"
