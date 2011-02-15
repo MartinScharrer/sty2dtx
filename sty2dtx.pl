@@ -105,6 +105,13 @@ Options:
                   Should contain one option or variable per line only.
   -N            : Do not read default config file(s). Must be the very first option to work.
 
+Config files:
+  A default config file either named 'sty2dtx.cfg' or '.sty2dtx.cfg' is searched in
+  the current directory, the users home directory and the directory of this script
+  as well as in the 'texmf' tree, in this order. The first one found is loaded.
+  As with -F files the config file should contain one option or variable per line.
+  Lines starting with '%' or '#' are ignored.
+
 Examples:
   Produce 'file.dtx' from 'file.sty':
     sty2dtx.pl < file.sty > file.dtx
