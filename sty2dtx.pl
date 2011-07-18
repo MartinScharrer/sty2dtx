@@ -731,7 +731,7 @@ while (<>) {
     elsif (/^%|^\s*%\s/) {
         if (!$removeenvs || !/^%\s+\\(?:begin|end){(?:macro|environment|macrocode|key)}/) {
             $_ =~ s/^\s*//;
-            if ($comments && !/^%\s*$/){
+            if ($comments || !/^%\s*$/){
                 $comments .= $_;
             }
         } 
