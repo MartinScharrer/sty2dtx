@@ -327,6 +327,7 @@ my $mode = 0;
 
 # RegExs for macro names and defintion:
 my $rmacroname = qr/[a-zA-Z\@:]+/;    # Add ':' for LaTeX3 style macros
+my $renvname   = qr/[a-zA-Z\@:*]+/;   #
 my $rusermacro = qr/[a-zA-Z]+/;       # Macros intended for users
 my $rmacrodef  = qr/
     ^                                                        # Begin of line (no whitespaces!)
@@ -359,7 +360,7 @@ my $renvdef = qr/
      \\(
         (?:new|renew|provide)environment\s* { \s*            # LaTeX definitions
      )
-     ($rmacroname)                                           # Environment names follow same rules as macro names
+     ($renvname)                                             # Environment names follow same rules as macro names
      \s* }                                                   # closing brace
      (.*)                                                    # Rest of line
     /xms;
