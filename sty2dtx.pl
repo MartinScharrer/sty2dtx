@@ -592,7 +592,12 @@ while (@ARGV) {
         }
         # Form "--var value"
         else {
-            $vars{ lc($name) } = shift;
+            if ($name == "help") {
+                usage();
+            }
+            else {
+                $vars{ lc($name) } = shift;
+            }
         }
     }
     # Files
