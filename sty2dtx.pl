@@ -252,6 +252,12 @@ my $macrostart = <<'EOT';
 %s%%    \begin{macrocode}
 EOT
 
+my $keystart = <<'EOT';
+%%
+%% \begin{key}{%s}{%s}
+%s%%    \begin{macrocode}
+EOT
+
 my $environmentstart = <<'EOT';
 %%
 %% \begin{environment}{%s}
@@ -261,6 +267,12 @@ EOT
 my $macrodescription = <<'EOT';
 %%
 %% \DescribeMacro{\%s}
+%%
+EOT
+
+my $keydescription = <<'EOT';
+%%
+%% \DescribeKey{\%s}{\%s}
 %%
 EOT
 
@@ -274,6 +286,12 @@ EOT
 my $macrostop = <<'EOT';
 %    \end{macrocode}
 % \end{macro}
+%
+EOT
+
+my $keystop = <<'EOT';
+%    \end{macrocode}
+% \end{key}
 %
 EOT
 
@@ -299,6 +317,7 @@ my $mode = 0;
 # 1 = inside 'macrocode' environment
 # 2 = inside 'macro' environment
 # 3 = inside 'environment' environment
+# 4 = inside 'key' environment
 
 # RegExs for macro names and defintion:
 my $rmacroname = qr/[a-zA-Z\@:]+/;    # Add ':' for LaTeX3 style macros
@@ -315,6 +334,17 @@ my $rmacrodef  = qr/
      )
      ($rmacroname)                                           # Macro name without backslash
      \s* }?                                                  # Potential closing brace
+     (.*)                                                    # Rest of line
+    /xms;
+
+my $rkeydef  = qr/
+    ^                                                        # Begin of line (no whitespaces!)
+    \\
+    (define\@key)
+    \s*
+    {([^}]+)}                                                # Key family
+    \s*
+    {([^}]+)}                                                # Key name
      (.*)                                                    # Rest of line
     /xms;
 
@@ -341,6 +371,9 @@ sub close_environment {
     }
     elsif ( $mode == 3 ) {
         $IMPL .= $environmentstop;
+    }
+    elsif ( $mode == 4 ) {
+        $IMPL .= $keystop;
     }
 }
 
@@ -591,6 +624,8 @@ while (<>) {
         my $name = $3;          # macro name
         my $rest = $4;          # rest of line
 
+        MACRO:
+
         # Add to usage section if it is a user level macro
         if ( $name =~ /^$rusermacro$/i ) {
             $USAGE .= sprintf( $macrodescription, $name );
@@ -612,6 +647,36 @@ while (<>) {
         my $prenrest = $pre . $rest;
         if ( $prenrest =~ tr/{/{/ == $prenrest =~ tr/}/}/ ) {
             $IMPL .= $macrostop;
+            # Outside mode
+            $mode = 0;
+        }
+    }
+    elsif (/$rkeydef/) {
+        my $pre  = "";    # before command
+        my $cmd  = $1;        # definition command
+        my $keyfamily = $2;   # macro name
+        my $keyname   = $3;   # macro name
+        my $rest = $4;        # rest of line
+
+        # Add to usage section if it is a user level macro
+        $USAGE .= sprintf( $keydescription, $keyfamily, $keyname );
+
+        close_environment();
+
+        # Print 'key' environment with current line.
+        $IMPL .= sprintf( $keystart, $keyfamily, $keyname, $comments );
+        addtochecksum($_);
+        $IMPL .= $_;
+        $comments = '';
+
+        # Inside key mode
+        $mode = 4;
+
+        # Test for one line definitions.
+        # $pre is tested to handle '{\somecatcodechange\gdef\name{short}}' lines
+        my $prenrest = $pre . $rest;
+        if ( $prenrest =~ tr/{/{/ == $prenrest =~ tr/}/}/ ) {
+            $IMPL .= $keystop;
             # Outside mode
             $mode = 0;
         }
@@ -677,7 +742,8 @@ while (<>) {
             $IMPL .= $_;
             # A single '}' on a line ends a 'macro' or 'environment' environment
             if ( $mode > 1 && /^\}\s*$/ ) {
-                $IMPL .= ( $mode == 2 ) ? $macrostop : $environmentstop;
+                $IMPL .= ( $mode == 2 ) ? $macrostop : 
+                         ( $mode == 3 ) ? $environmentstop : $keystop;
                 $mode = 0;
             }
         }
