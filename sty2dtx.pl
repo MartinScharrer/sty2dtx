@@ -347,7 +347,7 @@ my $rmacrodef  = qr/
 my $rkeydef  = qr/
     ^                                                        # Begin of line (no whitespaces!)
     \\
-    (define\@key)
+    (define\@[a-z]*key)
     \s*
     {([^}]+)}                                                # Key family
     \s*
