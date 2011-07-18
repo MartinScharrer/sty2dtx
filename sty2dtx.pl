@@ -147,6 +147,12 @@ and will be used for substitutions in the template file.
 =item B<-c> S<          >
   Only use code section (like v1.0)
 
+=item B<-r> S<          >
+  Remove existing 'macro', 'macrocode', etc. environments.
+
+=item B<-R> S<          >
+  Do not remove existing 'macro', 'macrocode', etc. environments.
+
 =item B<-i> F<ins-file> S< >
   Create .ins file with given name
 
@@ -382,12 +388,13 @@ $mon = sprintf( "%02d", $mon + 1 );
 $year += 1900;
 
 my @files;
-my $outfile   = '';
-my $verbose   = 0;
-my $codeonly  = 0;
-my $install   = 0;
-my $usebase   = 0;
-my $overwrite = 0;
+my $outfile    = '';
+my $verbose    = 0;
+my $codeonly   = 0;
+my $install    = 0;
+my $usebase    = 0;
+my $overwrite  = 0;
+my $removeenvs = 0;
 my $installfile;
 my $templfile;
 my $installtempl;
@@ -409,6 +416,12 @@ sub option {
     }
     elsif ( $opt eq 'H' ) {
         pod2usage(-message => $TITLE, -sections => 'DESCRIPTION', -verbose=>99 );
+    }
+    elsif ( $opt eq 'r' ) {
+        $removeenvs = 1;
+    }
+    elsif ( $opt eq 'R' ) {
+        $removeenvs = 0;
     }
     elsif ( $opt eq 'c' ) {
         $codeonly = 1;
@@ -716,8 +729,12 @@ while (<>) {
     # Real comments are either: 1) starting with a '%' at SOL or 2) are followed
     # by at least one whitespace. This exclude (most) commented out code.
     elsif (/^%|^\s*%\s/) {
-        $_ =~ s/^\s*//;
-        $comments .= $_;
+        if (!$removeenvs || !/^%\s+\\(?:begin|end){(?:macro|environment|macrocode|key)}/) {
+            $_ =~ s/^\s*//;
+            if ($comments && !/^%\s*$/){
+                $comments .= $_;
+            }
+        } 
         if ( $mode == 1 ) {
             $IMPL .= $macrocodestop;
             $mode = 0;
