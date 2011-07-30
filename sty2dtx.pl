@@ -2,9 +2,6 @@
 use strict;
 use warnings;
 use File::Basename qw(dirname);
-################################################################################
-# $Id$
-################################################################################
 
 =head1 NAME
 
@@ -13,11 +10,6 @@ sty2dtx -- Converts a LaTeX .sty file to a documented .dtx file
 =head1 VERSION
 
 Version: v2.2
-
-C<$Revision$>
-
-C<$Date$>
-
 
 =head1 COPYRIGHT
 
@@ -236,7 +228,7 @@ WWW: L<http://www.scharrer-online.de>
 ################################################################################
 use Pod::Usage;
 
-my $VERSION = "v2.2 " . substr( '$Date$', 7, 10 );
+my $VERSION = "v2.2";
 $VERSION =~ tr/-/\//;
 
 my $TITLE = << "EOT";
