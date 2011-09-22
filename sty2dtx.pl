@@ -401,6 +401,9 @@ my %vars = (
     year  => "$year",
 );
 
+my $template = *DATA;
+my %OUTFILES;
+
 # Handle options
 sub option {
     my $opt = shift;
@@ -423,10 +426,7 @@ sub option {
         $usebase = 1;
     }
     elsif ( $opt eq 't' ) {
-        close(DATA);
         $templfile = shift @ARGV;
-        open( DATA, '<', $templfile )
-          or die "$ERROR Couldn't open template file '$templfile'\n";
     }
     elsif ( $opt eq 'e' ) {
         my $templ = shift @ARGV;
@@ -513,6 +513,13 @@ sub option {
     elsif ( $opt eq 'O' ) {
         $overwrite = 1;
     }
+    elsif ( $opt eq 'A' ) {
+        $template = shift @ARGV;
+    }
+    elsif ( $opt eq 'a' ) {
+        my $outname = shift @ARGV;
+        $OUTFILES{$outname} = $template;
+    }
     else {
         print STDERR "sty2dtx: unknown option '-$opt'!\n";
         exit(2);
@@ -584,7 +591,7 @@ while (@ARGV) {
         }
         # Form "--var value"
         else {
-            if ($name == "help") {
+            if ($name eq "help") {
                 usage();
             }
             else {
@@ -795,8 +802,15 @@ if ($codeonly) {
     }
 }
 else {
-    while (<DATA>) {
-        last if /^__INS__$/;
+    if ($templfile) {
+        open( DTX, '<', $templfile )
+            or die "$ERROR Couldn't open template file '$templfile'\n";
+    }
+    else {
+        *DTX = *DATA;
+    }
+    while (<DTX>) {
+        last if !$templfile and /^__INS__$/;
         # Substitute template variables
         s/<\+([^+]+)\+>\n?/exists $vars{$1} ? $vars{$1} : "<+$1+>"/eg;
         print;
@@ -809,10 +823,10 @@ else {
         print STDERR ".\n";
     }
 }
-
+select STDOUT;
 ################################################################################
 # Write INS file if requested
-exit(0) unless $install;
+if ($install) {
 
 if ( ( !$outfile || $outfile eq '-' ) && !$installfile ) {
     print STDERR
@@ -823,9 +837,9 @@ if ( ( !$outfile || $outfile eq '-' ) && !$installfile ) {
 
 if ($installtempl) {
     open( DATA, '<', $installtempl )
-      or die "$ERROR Could't open template '$installtempl' for .ins file.";
+      or die "$ERROR Could't open template '$installtempl' for .ins file!\n";
 }
-elsif ($codeonly) {
+elsif ($codeonly || $templfile) {
     # If DATA template was not used for main file go forward to correct position
     while (<DATA>) {
         last if /^__INS__$/;
@@ -851,6 +865,38 @@ if ($verbose) {
     print STDERR " using template '$installtempl'" if $installtempl;
     print STDERR ".\n";
 }
+
+}
+
+################################################################################
+# Write additional files if requested
+while (my ($outfile, $template) = each %OUTFILES) {
+    my $TEMPLATEHANDLE;
+    if (ref $template eq 'GLOB') {
+        $TEMPLATEHANDLE = $template;
+    }
+    # TODO: add support for DTX and INS templates in DATA
+    else {
+        open( $TEMPLATEHANDLE, '<', $template )
+            or die "$ERROR Could't open template '$template' for file '$outfile'!\n";
+    }
+    open( my $OUTFILEHANDLE, '>', $outfile )
+      or die "$ERROR Could't create output file '$outfile'!\n";
+
+    while (<$TEMPLATEHANDLE>) {
+        # Substitute template variables
+        s/<\+([^+]+)\+>\n?/exists $vars{$1} ? $vars{$1} : "<+$1+>"/eg;
+        print {$OUTFILEHANDLE} $_;
+    }
+
+    if ($verbose) {
+        print STDERR "Generated file '$outfile' using template '$template'.\n";
+    }
+    close ($TEMPLATEHANDLE);
+    close ($OUTFILEHANDLE);
+}
+################################################################################
+exit (0);
 ################################################################################
 # The templates for the DTX file and INS file
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
