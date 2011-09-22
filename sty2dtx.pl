@@ -812,7 +812,7 @@ else {
     while (<DTX>) {
         last if !$templfile and /^__INS__$/;
         # Substitute template variables
-        s/<\+([^+]+)\+>\n?/exists $vars{$1} ? $vars{$1} : "<+$1+>"/eg;
+        s/<\+([^+]+)\+>/exists $vars{$1} ? $vars{$1} : "<+$1+>"/eg;
         print;
     }
 
@@ -856,7 +856,7 @@ open( INS, '>', $installfile )
 
 while (<DATA>) {
     # Substitute template variables
-    s/<\+([^+]+)\+>\n?/exists $vars{$1} ? $vars{$1} : "<+$1+>"/eg;
+    s/<\+([^+]+)\+>/exists $vars{$1} ? $vars{$1} : "<+$1+>"/eg;
     print INS $_;
 }
 
@@ -885,7 +885,7 @@ while (my ($outfile, $template) = each %OUTFILES) {
 
     while (<$TEMPLATEHANDLE>) {
         # Substitute template variables
-        s/<\+([^+]+)\+>\n?/exists $vars{$1} ? $vars{$1} : "<+$1+>"/eg;
+        s/<\+([^+]+)\+>/exists $vars{$1} ? $vars{$1} : "<+$1+>"/eg;
         print {$OUTFILEHANDLE} $_;
     }
 
