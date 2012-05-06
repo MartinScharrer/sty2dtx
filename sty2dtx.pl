@@ -9,7 +9,7 @@ sty2dtx -- Converts a LaTeX .sty file to a documented .dtx file
 
 =head1 VERSION
 
-Version: v2.2
+Version: v2.2a
 
 =head1 COPYRIGHT
 
@@ -228,7 +228,7 @@ WWW: L<http://www.scharrer-online.de>
 ################################################################################
 use Pod::Usage;
 
-my $VERSION = "v2.2";
+my $VERSION = "v2.2a";
 $VERSION =~ tr/-/\//;
 
 my $TITLE = << "EOT";

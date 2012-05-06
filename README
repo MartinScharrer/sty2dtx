@@ -2,7 +2,7 @@ NAME
     sty2dtx -- Converts a LaTeX .sty file to a documented .dtx file
 
 VERSION
-    Version: v2.2
+    Version: v2.2a
 
 COPYRIGHT
     Copyright (c) 2010-2011 Martin Scharrer <martin@scharrer-online.de>
