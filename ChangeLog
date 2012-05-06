@@ -1,0 +1,10 @@
+= v2.2a =
+ * Added support for config files in local, program and user directory as well as in the texmf tree.
+ * Updated documentation and provided it as man page and PDF.
+ * Added support for keys defined by `keyval` and the `xkeyval` packages.
+ * Added -r/-R options to remove existing code environments.
+ * Fixed missing support for starred environments.
+ * Added support for `--help` and `-help` switch.
+ * Added README.
+ * Added support for additional output files.
+ * Disabled new line removal after variables.
