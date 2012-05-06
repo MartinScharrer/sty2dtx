@@ -24,7 +24,7 @@ endef
 
 all: doc
 
-doc: pdf man
+doc: pdf man README
 
 tex: ${NAME}.tex
 
@@ -34,11 +34,7 @@ tex: ${NAME}.tex
 pdf: ${NAME}.pdf
 
 %.pdf: %.tex Makefile
-	${LATEX} $<
-	${LATEX} $<
-	${LATEX} $<
-	${LATEX} $<
-
+	latexmk -pdf $<
 
 man: ${NAME}.1
 
@@ -55,3 +51,4 @@ ctanify: zip
 
 zip: pdf man README
 	zip ${NAME}.zip ${SCRIPT} ${NAME}.pdf ${NAME}.1 README
+
