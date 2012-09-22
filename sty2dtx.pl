@@ -391,7 +391,7 @@ my $removeenvs = 0;
 my $installfile;
 my $templfile;
 my $installtempl;
-my $checksum = 0;
+my $checksum = -2; ## \NeedsTeXFormat and \Provides(Class|Package) don't count
 my $config_file;
 
 # Holds the variables for the templates, is initiated with default values:
@@ -487,7 +487,7 @@ sub option {
 
         # Read more options and variables from file
         open( my $OPT, '<', $optfile )
-          or die("Couldn't open options file '$optfile'!\n");
+          or die("Couldn't open options file '$optfile' ($!)!\n");
         while ( my $line = <$OPT> ) {
             chomp $line;
 
@@ -495,13 +495,19 @@ sub option {
             next if $line =~ /^\s*[#%]/;
 
             # Split variable lines without equal sign into name and value
-            if ( substr( $line, 0, 2 ) eq '--' and index( $line, '=' ) == -1 ) {
-                my ( $var, $val ) = split( /\s+/, $line, 2 );
-                $val =~ s/^["']|["']$//g;
+            if ( $line =~ /\A(--\w*?)=(.*)/xms ) {
+                my $var = $1;
+                (my $val = $2) =~ s/^["']|["']$//g;
                 unshift @ARGV, $var, $val;
             }
+            elsif ($line =~ /\A(-\w*?)\s+?(.*)/xms) {
+                unshift @ARGV, $1, $2;
+            }
+            elsif ($line =~ /\A(-\w*)/xms) {
+                unshift @ARGV, $1;
+            }
             else {
-                unshift @ARGV, $line;
+                die "$ERROR Could not recognice '$line' in '$optfile'\n";
             }
         }
         close($OPT);
@@ -551,10 +557,7 @@ foreach my $path ('.', $ENV{HOME}, dirname($0)) {
 }
 if (!$config_file) {
     # Find the config file in the TeX tree.
-    if (open (my $pipe, '-|', "kpsewhich -must-exist $CONFIG_NAME")) {
-        $config_file = <$pipe>;
-        close $pipe;
-    }
+    $config_file = `kpsewhich -must-exist $CONFIG_NAME`;
 }
 if ($config_file) {
     chomp $config_file;
@@ -628,7 +631,7 @@ if ( $outfile && $outfile ne '-' ) {
               . " Use the -O option to overwrite.\n" );
     }
     open( OUTPUT, '>', $outfile )
-      or die("$ERROR Could not open output file '$outfile'!");
+      or die("$ERROR Could not open output file '$outfile' ($!)!");
     select OUTPUT;
 }
 
@@ -806,7 +809,7 @@ if ($codeonly) {
 else {
     if ($templfile) {
         open( DTX, '<', $templfile )
-            or die "$ERROR Couldn't open template file '$templfile'\n";
+            or die "$ERROR Couldn't open template file '$templfile' ($!)\n";
     }
     else {
         *DTX = *DATA;
@@ -839,7 +842,7 @@ if ( ( !$outfile || $outfile eq '-' ) && !$installfile ) {
 
 if ($installtempl) {
     open( DATA, '<', $installtempl )
-      or die "$ERROR Could't open template '$installtempl' for .ins file!\n";
+      or die "$ERROR Could't open template '$installtempl' for .ins file! ($!)\n";
 }
 elsif ($codeonly || $templfile) {
     # If DATA template was not used for main file go forward to correct position
@@ -854,7 +857,7 @@ if ( !$overwrite && -e $installfile && $installfile ne '/dev/null' ) {
           . " Use the -O option to overwrite.\n" );
 }
 open( INS, '>', $installfile )
-  or die "$ERROR Could't open new .ins file '$installfile'.";
+  or die "$ERROR Could't open new .ins file '$installfile' ($!)\n";
 
 while (<DATA>) {
     # Substitute template variables
@@ -880,10 +883,10 @@ while (my ($outfile, $template) = each %OUTFILES) {
     # TODO: add support for DTX and INS templates in DATA
     else {
         open( $TEMPLATEHANDLE, '<', $template )
-            or die "$ERROR Could't open template '$template' for file '$outfile'!\n";
+            or die "$ERROR Could't open template '$template' for file '$outfile' ($!)!\n";
     }
     open( my $OUTFILEHANDLE, '>', $outfile )
-      or die "$ERROR Could't create output file '$outfile'!\n";
+      or die "$ERROR Could't create output file '$outfile' ($!)!\n";
 
     while (<$TEMPLATEHANDLE>) {
         # Substitute template variables
