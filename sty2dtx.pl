@@ -307,8 +307,8 @@ my $macrocodestop = <<'EOT';
 %    \end{macrocode}
 EOT
 
-my $USAGE = '';    # Store macro names for usage section
-my $IMPL  = '';    # Store implementation section
+my $USAGE = q();    # Store macro names for usage section
+my $IMPL  = q();    # Store implementation section
 
 my $mode = 0;
 # 0 = outside of macro or macrocode environments
@@ -318,9 +318,9 @@ my $mode = 0;
 # 4 = inside 'key' environment
 
 # RegExs for macro names and defintion:
-my $rmacroname = qr/[a-zA-Z\@:]+/;    # Add ':' for LaTeX3 style macros
-my $renvname   = qr/[a-zA-Z\@:*]+/;   #
-my $rusermacro = qr/[a-zA-Z]+/;       # Macros intended for users
+my $rmacroname = qr/[a-zA-Z\@:]+/xms;    # Add ':' for LaTeX3 style macros
+my $renvname   = qr/[a-zA-Z\@:*]+/xms;   #
+my $rusermacro = qr/[a-zA-Z]+/xms;       # Macros intended for users
 my $rmacrodef  = qr/
     ^                                                        # Begin of line (no whitespaces!)
      (
@@ -357,7 +357,7 @@ my $renvdef = qr/
      (.*)                                                    # Rest of line
     /xms;
 
-my $comments = '';
+my $comments = q();
 
 # Print end of environment, if one is open
 sub close_environment {
@@ -381,7 +381,7 @@ $mon = sprintf( "%02d", $mon + 1 );
 $year += 1900;
 
 my @files;
-my $outfile    = '';
+my $outfile    = q();
 my $verbose    = 0;
 my $codeonly   = 0;
 my $install    = 0;
@@ -507,10 +507,10 @@ sub option {
                 unshift @ARGV, $1;
             }
             else {
-                die "$ERROR Could not recognice '$line' in '$optfile'\n";
+                die "$ERROR Could not recognize '$line' in '$optfile'\n";
             }
         }
-        close($OPT);
+        close $OPT;
     }
     elsif ( $opt eq 'D' ) {
         $vars{date} = "$year/$mon/$mday";
@@ -833,43 +833,43 @@ select STDOUT;
 # Write INS file if requested
 if ($install) {
 
-if ( ( !$outfile || $outfile eq '-' ) && !$installfile ) {
-    print STDERR
-      "Warning: Did not generate requested .ins file because main file\n";
-    print STDERR "         was written to STDOUT and no -i option was given.\n";
-    exit(1);
-}
-
-if ($installtempl) {
-    open( DATA, '<', $installtempl )
-      or die "$ERROR Could't open template '$installtempl' for .ins file! ($!)\n";
-}
-elsif ($codeonly || $templfile) {
-    # If DATA template was not used for main file go forward to correct position
-    while (<DATA>) {
-        last if /^__INS__$/;
+    if ( ( !$outfile || $outfile eq '-' ) && !$installfile ) {
+        print STDERR
+          "Warning: Did not generate requested .ins file because main file\n";
+        print STDERR "         was written to STDOUT and no -i option was given.\n";
+        exit(1);
     }
-}
 
-$installfile = $vars{filebase} . '.ins' unless defined $installfile;
-if ( !$overwrite && -e $installfile && $installfile ne '/dev/null' ) {
-    die(    "$ERROR Output file '$installfile' does already exists!"
-          . " Use the -O option to overwrite.\n" );
-}
-open( INS, '>', $installfile )
-  or die "$ERROR Could't open new .ins file '$installfile' ($!)\n";
+    if ($installtempl) {
+        open( DATA, '<', $installtempl )
+          or die "$ERROR Could't open template '$installtempl' for .ins file! ($!)\n";
+    }
+    elsif ($codeonly || $templfile) {
+        # If DATA template was not used for main file go forward to correct position
+        while (<DATA>) {
+            last if /^__INS__$/;
+        }
+    }
 
-while (<DATA>) {
-    # Substitute template variables
-    s/<\+([^+]+)\+>/exists $vars{$1} ? $vars{$1} : "<+$1+>"/eg;
-    print INS $_;
-}
+    $installfile = $vars{filebase} . '.ins' unless defined $installfile;
+    if ( !$overwrite && -e $installfile && $installfile ne '/dev/null' ) {
+        die(    "$ERROR Output file '$installfile' does already exists!"
+              . " Use the -O option to overwrite.\n" );
+    }
+    open( INS, '>', $installfile )
+      or die "$ERROR Could't open new .ins file '$installfile' ($!)\n";
 
-if ($verbose) {
-    print STDERR "Generated INS file '$installfile'";
-    print STDERR " using template '$installtempl'" if $installtempl;
-    print STDERR ".\n";
-}
+    while (<DATA>) {
+        # Substitute template variables
+        s/<\+([^+]+)\+>/exists $vars{$1} ? $vars{$1} : "<+$1+>"/eg;
+        print INS $_;
+    }
+
+    if ($verbose) {
+        print STDERR "Generated INS file '$installfile'";
+        print STDERR " using template '$installtempl'" if $installtempl;
+        print STDERR ".\n";
+    }
 
 }
 
@@ -893,12 +893,12 @@ while (my ($outfile, $template) = each %OUTFILES) {
         s/<\+([^+]+)\+>/exists $vars{$1} ? $vars{$1} : "<+$1+>"/eg;
         print {$OUTFILEHANDLE} $_;
     }
+    close $TEMPLATEHANDLE;
+    close $OUTFILEHANDLE;
 
     if ($verbose) {
         print STDERR "Generated file '$outfile' using template '$template'.\n";
     }
-    close ($TEMPLATEHANDLE);
-    close ($OUTFILEHANDLE);
 }
 ################################################################################
 exit (0);
