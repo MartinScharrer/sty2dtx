@@ -431,8 +431,9 @@ sub option {
     elsif ( $opt eq 'e' ) {
         my $templ = shift @ARGV;
         if ( $templ ne '-' ) {
+            die "$ERROR '$templ' already exists\n" if -e $templ;
             open( STDOUT, '>', $templ )
-              or die "$ERROR Couldn't open new template file '$templ'\n";
+              or die "$ERROR Couldn't open new template file '$templ' ($!)\n";
         }
         while (<DATA>) {
             last if /^__INS__$/;
@@ -446,8 +447,9 @@ sub option {
     elsif ( $opt eq 'E' ) {
         my $templ = shift @ARGV;
         if ( $templ ne '-' ) {
+            die "$ERROR '$templ' already exists\n" if -e $templ;
             open( STDOUT, '>', $templ )
-              or die "$ERROR Couldn't open new template file '$templ'\n";
+              or die "$ERROR Couldn't open new template file '$templ' ($!)\n";
         }
         while (<DATA>) {
             last if /^__INS__$/;
