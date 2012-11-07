@@ -494,17 +494,25 @@ sub option {
             # Skip comment lines
             next if $line =~ /^\s*[#%]/;
 
-            # Split variable lines without equal sign into name and value
-            if ( $line =~ /\A(--\w*?)=(.*)/xms ) {
+            # Handle variables
+            # Split at '=' or space and add as two arguments
+            if ( $line =~ /\A\s*(--[a-zA-Z0-9]+?)(?:\s+|=)(.*)/xms ) {
                 my $var = $1;
                 (my $val = $2) =~ s/^["']|["']$//g;
                 unshift @ARGV, $var, $val;
             }
-            elsif ($line =~ /\A(-\w*?)\s+?(.*)/xms) {
-                unshift @ARGV, $1, $2;
-            }
-            elsif ($line =~ /\A(-\w*)/xms) {
-                unshift @ARGV, $1;
+            # Handle options with and without values
+            # as well sets of options
+            elsif ($line =~ /\A\s*(-[a-zA-Z0-9]+)(?:\s+(.*))?/xms) {
+                my $var = $1;
+                my $val = $2;
+                if (defined $val) {
+                    $val =~ s/^["']|["']$//g;
+                    unshift @ARGV, $var, $val;
+                }
+                else {
+                    unshift @ARGV, $var;
+                }
             }
             else {
                 die "$ERROR Could not recognize '$line' in '$optfile'\n";
