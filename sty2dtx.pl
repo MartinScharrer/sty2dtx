@@ -392,7 +392,7 @@ my $removeenvs = 0;
 my $installfile;
 my $templfile;
 my $installtempl;
-my $checksum = -2; ## \NeedsTeXFormat and \Provides(Class|Package) don't count
+my $checksum = 0;
 my $config_file;
 
 # Holds the variables for the templates, is initiated with default values:
