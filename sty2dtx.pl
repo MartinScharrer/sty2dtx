@@ -174,10 +174,11 @@ and will be used for substitutions in the template file.
 
 =head2 Config files
 
-A default config file either named 'sty2dtx.cfg' or '.sty2dtx.cfg' is searched in
-the current directory, the users home directory and the directory of this script
-as well as in the 'texmf' tree, in this order. The first one found is loaded.
-As with -F files the config file should contain one option or variable per line.
+A default config file either named 'sty2dtx.cfg' or '.sty2dtx.cfg' is searched
+in the current directory, the users home directory and the directory of this
+script, in this order. The first one found is loaded.  If none is found the
+'texmf' tree is searched for a 'sty2dtx.cfg' config file.  As with -F files the
+config file should contain one option or variable per line.
 Lines starting with 'C<%>' or 'C<#>' are ignored.
 
 
