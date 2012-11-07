@@ -1,3 +1,8 @@
+= v2.3 =
+ * Added patches by Robin Schneider.
+ * Parsing of options in config files improved.
+ * Coding style improvements.
+
 = v2.2a =
  * Added support for config files in local, program and user directory as well as in the texmf tree.
  * Updated documentation and provided it as man page and PDF.

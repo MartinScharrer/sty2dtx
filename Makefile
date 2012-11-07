@@ -11,7 +11,7 @@ define PREAMBLE
 \setlength{\parindent}{0pt}\
 \title{\Huge Manual page for \textsf{sty2dtx}}\
 \author{\Large Martin Scharrer\\[\medskipamount]\href{mailto:martin@scharrer-online.de}{martin@scharrer-online.de}}\
-\date{2012/05/06 -- v2.2a}\
+\date{2012/11/07 -- v2.3}\
 \begin{document}\
 \maketitle
 endef
@@ -42,7 +42,7 @@ man: ${NAME}.1
 	@pod2man $< > $@
 
 clean:
-	${RM} ${NAME}.pdf ${NAME}.1 ${NAME}.tex README
+	${RM} ${NAME}.pdf ${NAME}.1 ${NAME}.tex README ${NAME}.log ${NAME}.fls ${NAME}.out ${NAME}.fdb_latexmk ${NAME}.aux ${NAME}.zip
 
 README: ${SCRIPT}
 	pod2text $< > $@

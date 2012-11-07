@@ -2,10 +2,10 @@ NAME
     sty2dtx -- Converts a LaTeX .sty file to a documented .dtx file
 
 VERSION
-    Version: v2.2a
+    Version: v2.3
 
 COPYRIGHT
-    Copyright (c) 2010-2011 Martin Scharrer <martin@scharrer-online.de>
+    Copyright (c) 2010-2012 Martin Scharrer <martin@scharrer-online.de>
 
     This program is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by the
@@ -108,10 +108,10 @@ USAGE
   Config files
     A default config file either named 'sty2dtx.cfg' or '.sty2dtx.cfg' is
     searched in the current directory, the users home directory and the
-    directory of this script as well as in the 'texmf' tree, in this order.
-    The first one found is loaded. As with -F files the config file should
-    contain one option or variable per line. Lines starting with '"%"' or
-    '"#"' are ignored.
+    directory of this script, in this order. The first one found is loaded.
+    If none is found the 'texmf' tree is searched for a 'sty2dtx.cfg' config
+    file. As with -F files the config file should contain one option or
+    variable per line. Lines starting with '"%"' or '"#"' are ignored.
 
 Examples
     Produce 'file.dtx' from 'file.sty':

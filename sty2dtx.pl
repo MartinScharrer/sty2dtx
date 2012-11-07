@@ -9,11 +9,11 @@ sty2dtx -- Converts a LaTeX .sty file to a documented .dtx file
 
 =head1 VERSION
 
-Version: v2.2a
+Version: v2.3
 
 =head1 COPYRIGHT
 
-Copyright (c) 2010-2011 Martin Scharrer <martin@scharrer-online.de>
+Copyright (c) 2010-2012 Martin Scharrer <martin@scharrer-online.de>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -229,7 +229,7 @@ WWW: L<http://www.scharrer-online.de>
 ################################################################################
 use Pod::Usage;
 
-my $VERSION = "v2.2a";
+my $VERSION = "v2.3";
 $VERSION =~ tr/-/\//;
 
 my $TITLE = << "EOT";
