@@ -378,6 +378,7 @@ sub close_environment {
 }
 
 my ( $mday, $mon, $year ) = ( localtime(time) )[ 3 .. 5 ];
+$mday = sprintf( "%02d", $mday );
 $mon = sprintf( "%02d", $mon + 1 );
 $year += 1900;
 
