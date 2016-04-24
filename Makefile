@@ -50,5 +50,9 @@ README: ${SCRIPT}
 ctanify: zip
 
 zip: pdf man README
-	zip ${NAME}.zip ${SCRIPT} ${NAME}.pdf ${NAME}.1 README
+	-rm -rf ${NAME}/
+	mkdir ${NAME}/
+	cp ${SCRIPT} ${NAME}.pdf ${NAME}.1 README ${NAME}/
+	zip -r ${NAME}.zip ${NAME}
+	-rm -rf ${NAME}/
 
