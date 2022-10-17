@@ -5,7 +5,7 @@ VERSION
     Version: v2.3
 
 COPYRIGHT
-    Copyright (c) 2010-2016 Martin Scharrer <martin@scharrer-online.de>
+    Copyright (c) 2010-2022 Martin Scharrer <martin.scharrer@web.de>
 
     This program is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by the
@@ -149,7 +149,7 @@ Examples
 AUTHOR
     Martin Scharrer
 
-    E-mail: martin@scharrer-online.de
+    E-mail: martin.scharrer@web.de
 
     WWW: <http://www.scharrer-online.de>
 

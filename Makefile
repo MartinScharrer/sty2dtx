@@ -10,7 +10,7 @@ define PREAMBLE
 \setcounter{secnumdepth}{0}\
 \setlength{\parindent}{0pt}\
 \title{\Huge Manual page for \textsf{sty2dtx}}\
-\author{\Large Martin Scharrer\\[\medskipamount]\href{mailto:martin@scharrer-online.de}{martin@scharrer-online.de}}\
+\author{\Large Martin Scharrer\\[\medskipamount]\href{mailto:martin.scharrer@web.de}{martin@scharrer-online.de}}\
 \date{2012/11/07 -- v2.3}\
 \begin{document}\
 \maketitle

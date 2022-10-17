@@ -13,7 +13,7 @@ Version: v2.3
 
 =head1 COPYRIGHT
 
-Copyright (c) 2010-2012 Martin Scharrer <martin@scharrer-online.de>
+Copyright (c) 2010-2022 Martin Scharrer <martin.scharrer@web.de>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -220,7 +220,7 @@ Produce DTX file for a class:
 
 Martin Scharrer 
 
-E-mail: L<martin@scharrer-online.de>
+E-mail: L<martin.scharrer@web.de>
 
 WWW: L<http://www.scharrer-online.de>
 
