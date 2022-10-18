@@ -9,7 +9,7 @@ sty2dtx -- Converts a LaTeX .sty file to a documented .dtx file
 
 =head1 VERSION
 
-Version: v2.4
+Version: v2.4 - 2022/10/18
 
 =head1 LINKS
 
