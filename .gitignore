@@ -1,0 +1,10 @@
+/sty2dtx
+*.1
+*.aux
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.pdf
+*.tex
+*.zip
