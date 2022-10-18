@@ -4,6 +4,13 @@ NAME
 VERSION
     Version: v2.3
 
+LINKS
+    CTAN: https://ctan.org/pkg/sty2dtx
+
+    Repository: https://github.com/MartinScharrer/sty2dtx
+
+    Issues: https://github.com/MartinScharrer/sty2dtx/issues
+
 COPYRIGHT
     Copyright (c) 2010-2022 Martin Scharrer <martin.scharrer@web.de>
 
@@ -18,7 +25,7 @@ COPYRIGHT
     Public License for more details.
 
     You should have received a copy of the GNU General Public License along
-    with this program. If not, see <http://www.gnu.org/licenses/>.
+    with this program. If not, see <https://www.gnu.org/licenses/>.
 
 DESCRIPTION
     Converts a .sty file (LaTeX package) to .dtx format (documented LaTeX

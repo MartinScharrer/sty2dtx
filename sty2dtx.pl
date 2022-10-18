@@ -11,6 +11,14 @@ sty2dtx -- Converts a LaTeX .sty file to a documented .dtx file
 
 Version: v2.3
 
+=head1 LINKS
+
+CTAN: https://ctan.org/pkg/sty2dtx
+
+Repository: https://github.com/MartinScharrer/sty2dtx
+
+Issues: https://github.com/MartinScharrer/sty2dtx/issues
+
 =head1 COPYRIGHT
 
 Copyright (c) 2010-2022 Martin Scharrer <martin.scharrer@web.de>
@@ -26,7 +34,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
 =head1 DESCRIPTION
