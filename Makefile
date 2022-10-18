@@ -3,6 +3,7 @@ NAME=sty2dtx
 LATEX=pdflatex
 
 SCRIPT=${NAME}.pl
+README=README.txt
 
 define PREAMBLE
 \documentclass[a4paper]{article}\
@@ -10,7 +11,7 @@ define PREAMBLE
 \setcounter{secnumdepth}{0}\
 \setlength{\parindent}{0pt}\
 \title{\Huge Manual page for \textsf{sty2dtx}}\
-\author{\Large Martin Scharrer\\[\medskipamount]\href{mailto:martin.scharrer@web.de}{martin@scharrer-online.de}}\
+\author{\Large Martin Scharrer\\[\medskipamount]\href{mailto:martin.scharrer@web.de}{martin.scharrer@web.de}}\
 \date{2012/11/07 -- v2.3}\
 \begin{document}\
 \maketitle
@@ -24,7 +25,7 @@ endef
 
 all: doc
 
-doc: pdf man README
+doc: pdf man ${README}
 
 tex: ${NAME}.tex
 
@@ -42,17 +43,17 @@ man: ${NAME}.1
 	@pod2man $< > $@
 
 clean:
-	${RM} ${NAME}.pdf ${NAME}.1 ${NAME}.tex README ${NAME}.log ${NAME}.fls ${NAME}.out ${NAME}.fdb_latexmk ${NAME}.aux ${NAME}.zip
+	${RM} ${NAME}.pdf ${NAME}.1 ${NAME}.tex ${README} ${NAME}.log ${NAME}.fls ${NAME}.out ${NAME}.fdb_latexmk ${NAME}.aux ${NAME}.zip
 
-README: ${SCRIPT}
+${README}: ${SCRIPT}
 	pod2text $< > $@
 
 ctanify: zip
 
-zip: pdf man README
+zip: pdf man ${README}
 	-rm -rf ${NAME}/
 	mkdir ${NAME}/
-	cp ${SCRIPT} ${NAME}.pdf ${NAME}.1 README ${NAME}/
+	cp ${SCRIPT} ${NAME}.pdf ${NAME}.1 ${README} ${NAME}/
 	zip -r ${NAME}.zip ${NAME}
 	-rm -rf ${NAME}/
 
