@@ -53,7 +53,7 @@ ctanify: zip
 zip: pdf man ${README}
 	-rm -rf ${NAME}/
 	mkdir ${NAME}/
-	cp ${SCRIPT} ${NAME}.pdf ${NAME}.1 ${README} ${NAME}/
+	cp ${SCRIPT} ${NAME}.pdf ${NAME}.1 ${README} DEPENDS.txt ${NAME}/
 	zip -r ${NAME}.zip ${NAME}
 	-rm -rf ${NAME}/
 
