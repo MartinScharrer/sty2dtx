@@ -2,7 +2,7 @@ NAME
     sty2dtx -- Converts a LaTeX .sty file to a documented .dtx file
 
 VERSION
-    Version: v2.3
+    Version: v2.4
 
 LINKS
     CTAN: https://ctan.org/pkg/sty2dtx
