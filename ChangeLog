@@ -1,3 +1,7 @@
+= v2.4 - 2022/10/18 =
+ * Fixed unescaped braces in regexes.
+ * Updated project URL and author email address.
+
 = v2.3 =
  * Added patches by Robin Schneider.
  * Parsing of options in config files improved.
