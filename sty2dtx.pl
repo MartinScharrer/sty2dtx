@@ -337,11 +337,11 @@ my $rmacrodef  = qr/
      )
     \\(
           [gex]?def \s* \\                                   # TeX definitions
-        | (?:new|renew|provide)command\s* \*? \s* {? \s* \\  # LaTeX definitions
-        | \@namedef{?                                        # Definition by name only
+        | (?:new|renew|provide)command\s* \*? \s* \{? \s* \\ # LaTeX definitions
+        | \@namedef\{?                                       # Definition by name only
      )
      ($rmacroname)                                           # Macro name without backslash
-     \s* }?                                                  # Potential closing brace
+     \s* \}?                                                 # Potential closing brace
      (.*)                                                    # Rest of line
     /xms;
 
@@ -350,19 +350,19 @@ my $rkeydef  = qr/
     \\
     (define\@[a-z]*key)
     \s*
-    {([^}]+)}                                                # Key family
+    \{([^}]+)\}                                              # Key family
     \s*
-    {([^}]+)}                                                # Key name
+    \{([^}]+)\}                                              # Key name
      (.*)                                                    # Rest of line
     /xms;
 
 my $renvdef = qr/
     ^                                                        # Begin of line (no whitespaces!)
      \\(
-        (?:new|renew|provide)environment\s* { \s*            # LaTeX definitions
+        (?:new|renew|provide)environment\s* \{ \s*           # LaTeX definitions
      )
      ($renvname)                                             # Environment names follow same rules as macro names
-     \s* }                                                   # closing brace
+     \s* \}                                                  # closing brace
      (.*)                                                    # Rest of line
     /xms;
 
@@ -757,7 +757,7 @@ while (<>) {
     # Real comments are either: 1) starting with a '%' at SOL or 2) are followed
     # by at least one whitespace. This exclude (most) commented out code.
     elsif (/^%|^\s*%\s/) {
-        if (!$removeenvs || !/^%\s+\\(?:begin|end){(?:macro|environment|macrocode|key)}/) {
+        if (!$removeenvs || !/^%\s+\\(?:begin|end)\{(?:macro|environment|macrocode|key)\}/) {
             $_ =~ s/^\s*//;
             if ($comments || !/^%\s*$/){
                 $comments .= $_;
