@@ -12,7 +12,7 @@ define PREAMBLE
 \setlength{\parindent}{0pt}\
 \title{\Huge Manual page for \textsf{sty2dtx}}\
 \author{\Large Martin Scharrer\\[\medskipamount]\href{mailto:martin.scharrer@web.de}{martin.scharrer@web.de}}\
-\date{2012/11/07 -- v2.3}\
+\date{2022/10/18 -- v2.4}\
 \begin{document}\
 \maketitle
 endef

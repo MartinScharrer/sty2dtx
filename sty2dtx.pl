@@ -13,11 +13,11 @@ Version: v2.4 - 2022/10/18
 
 =head1 LINKS
 
-CTAN: https://ctan.org/pkg/sty2dtx
+CTAN: L<https://ctan.org/pkg/sty2dtx>
 
-Repository: https://github.com/MartinScharrer/sty2dtx
+Repository: L<https://github.com/MartinScharrer/sty2dtx>
 
-Issues: https://github.com/MartinScharrer/sty2dtx/issues
+Issues: L<https://github.com/MartinScharrer/sty2dtx/issues>
 
 =head1 COPYRIGHT
 
